@@ -1,0 +1,383 @@
+/* ─── Absences Screen ──────────────────────────────────────────────────────────
+   All styles scoped to .screen-absences and .absence-* classes.
+   Max 500 lines.
+───────────────────────────────────────────────────────────────────────────── */
+
+/* ─── Screen Layout ─────────────────────────────────────────────────────────── */
+
+.screen-absences {
+  display: flex;
+  flex-direction: column;
+  min-height: 100vh;
+  background: var(--bg-base);
+  padding-bottom: 80px; /* bottom nav */
+}
+
+.absences-header {
+  padding: 20px 20px 12px;
+  background: var(--bg-surface);
+  border-bottom: 1px solid var(--border);
+}
+
+.absences-title {
+  font-size: 22px;
+  font-weight: 800;
+  color: var(--text-primary);
+  margin-bottom: 4px;
+  letter-spacing: -0.5px;
+}
+
+.absences-subtitle {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ─── Vacation Balance Card ──────────────────────────────────────────────────── */
+
+.vacation-balance-card {
+  margin: 16px 16px 0;
+  background: var(--bg-card);
+  border-radius: var(--radius-lg);
+  padding: 16px;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  border: 1px solid var(--border);
+}
+
+.vacation-balance-icon {
+  font-size: 32px;
+  flex-shrink: 0;
+}
+
+.vacation-balance-info {
+  flex: 1;
+}
+
+.vacation-balance-days {
+  font-size: 28px;
+  font-weight: 800;
+  color: var(--fluxs-lime);
+  line-height: 1;
+  font-family: var(--font-mono);
+}
+
+.vacation-balance-label {
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+.vacation-balance-meta {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 4px;
+}
+
+/* ─── New Absence Buttons ────────────────────────────────────────────────────── */
+
+.new-absence-section {
+  padding: 16px 16px 0;
+}
+
+.new-absence-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 10px;
+}
+
+.new-absence-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px;
+}
+
+.absence-type-btn {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  padding: 12px 14px;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  text-align: left;
+}
+
+.absence-type-btn:active {
+  background: var(--bg-hover);
+  border-color: var(--fluxs-teal);
+}
+
+.absence-type-btn .btn-icon {
+  font-size: 20px;
+  flex-shrink: 0;
+}
+
+.absence-type-btn .btn-label {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text-primary);
+  line-height: 1.2;
+}
+
+.absence-type-btn .btn-sub {
+  font-size: 11px;
+  color: var(--text-muted);
+  margin-top: 2px;
+}
+
+/* ─── Absence List ───────────────────────────────────────────────────────────── */
+
+.absences-list-section {
+  padding: 20px 16px 0;
+}
+
+.absences-list-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 12px;
+}
+
+.absences-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.absence-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: 14px 16px;
+  border: 1px solid var(--border);
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.absence-card:active {
+  background: var(--bg-hover);
+}
+
+.absence-card-icon {
+  font-size: 22px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.absence-card-body {
+  flex: 1;
+  min-width: 0;
+}
+
+.absence-card-label {
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin-bottom: 2px;
+}
+
+.absence-card-dates {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: 4px;
+}
+
+.absence-card-days {
+  font-size: 12px;
+  color: var(--text-muted);
+}
+
+.absence-card-status {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* ─── Status Pills ───────────────────────────────────────────────────────────── */
+
+.status-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 3px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.status-pill.pending {
+  background: rgba(255, 193, 7, 0.15);
+  color: #ffc107;
+  border: 1px solid rgba(255, 193, 7, 0.3);
+}
+
+.status-pill.approved {
+  background: rgba(22, 192, 130, 0.15);
+  color: var(--fluxs-lime);
+  border: 1px solid rgba(22, 192, 130, 0.3);
+}
+
+.status-pill.rejected {
+  background: rgba(239, 68, 68, 0.15);
+  color: #ef4444;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.status-pill.cancelled {
+  background: rgba(107, 114, 128, 0.15);
+  color: var(--text-muted);
+  border: 1px solid rgba(107, 114, 128, 0.3);
+}
+
+.status-pill .pill-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+/* ─── Empty State ────────────────────────────────────────────────────────────── */
+
+.absences-empty {
+  text-align: center;
+  padding: 40px 24px;
+  color: var(--text-muted);
+}
+
+.absences-empty-icon {
+  font-size: 48px;
+  margin-bottom: 12px;
+  opacity: 0.5;
+}
+
+.absences-empty-text {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--text-secondary);
+  margin-bottom: 6px;
+}
+
+.absences-empty-sub {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+/* ─── Absence Detail Modal ───────────────────────────────────────────────────── */
+
+.absence-detail-section {
+  margin-bottom: 16px;
+}
+
+.absence-detail-label {
+  font-size: 11px;
+  font-weight: 700;
+  color: var(--text-muted);
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  margin-bottom: 6px;
+}
+
+.absence-detail-value {
+  font-size: 15px;
+  color: var(--text-primary);
+  font-weight: 500;
+}
+
+.absence-detail-actions {
+  display: flex;
+  gap: 10px;
+  margin-top: 20px;
+}
+
+.absence-detail-actions .btn-danger {
+  flex: 1;
+  padding: 12px;
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: #ef4444;
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.absence-detail-actions .btn-secondary {
+  flex: 1;
+  padding: 12px;
+  background: var(--bg-card);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-md);
+  color: var(--text-secondary);
+  font-size: 14px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ─── Form Styles (Absence Form Modal) ──────────────────────────────────────── */
+
+.form-info {
+  font-size: 12px;
+  color: var(--text-muted);
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  padding: 8px 12px;
+  margin-bottom: 14px;
+  border-left: 3px solid var(--fluxs-teal);
+}
+
+.form-row-inline {
+  display: flex;
+  gap: 12px;
+}
+
+.form-row-inline .form-row {
+  flex: 1;
+}
+
+.form-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  background: var(--bg-card);
+  border-radius: var(--radius-sm);
+  margin-bottom: 12px;
+  cursor: pointer;
+  border: 1px solid var(--border);
+}
+
+.form-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: var(--fluxs-lime);
+  cursor: pointer;
+}
+
+.form-checkbox-label {
+  font-size: 13px;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+/* ─── Responsive adjustments ────────────────────────────────────────────────── */
+
+@media (max-width: 380px) {
+  .new-absence-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .vacation-balance-days {
+    font-size: 24px;
+  }
+}

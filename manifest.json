@@ -1,0 +1,28 @@
+{
+  "name": "FLUXS Zeiterfassung",
+  "short_name": "FLUXS Zeit",
+  "description": "Zeiterfassung für FLUXS GmbH – Stempeluhr, Abwesenheiten, Monatsübersicht",
+  "start_url": "./index.html",
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#002d26",
+  "theme_color": "#055445",
+  "icons": [
+    {
+      "src": "./assets/icons/icon-192.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "./assets/icons/icon-512.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["business", "productivity"],
+  "lang": "de-DE",
+  "dir": "ltr"
+}
