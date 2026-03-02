@@ -216,13 +216,31 @@ function _saveWorkTimeSettings() {
 
   const modal = $('modalWorkTime');
   if (modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); }
-  showToast('Einstellungen gespeichert', 'success');
+
+  showToast('Arbeitszeitmodell gespeichert', 'success');
   _render();
+}
+
+function _closeModal(id) {
+  const modal = $(id);
+  if (modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); }
+}
+
+// ─── Logout ───────────────────────────────────────────────────────────────────
+
+function _logout() {
+  if (!window.confirm('Wirklich abmelden?')) return;
+  Auth.logout();
 }
 
 // ─── Event Handling ───────────────────────────────────────────────────────────
 
 function _handleClick(e) {
+  if (e.target.closest('#btnLogout')) {
+    _logout();
+    return;
+  }
+
   if (e.target.closest('#btnWorkTimeSettings')) {
     _openWorkTimeModal();
     return;
@@ -234,20 +252,14 @@ function _handleClick(e) {
   }
 
   if (e.target.closest('#btnWorkTimeCancel')) {
-    const modal = $('modalWorkTime');
-    if (modal) { modal.classList.remove('open'); modal.setAttribute('aria-hidden', 'true'); }
+    _closeModal('modalWorkTime');
     return;
   }
 
+  // Backdrop close
   if (e.target.classList.contains('modal-overlay')) {
     e.target.classList.remove('open');
     e.target.setAttribute('aria-hidden', 'true');
-    return;
-  }
-
-  if (e.target.closest('#btnLogout')) {
-    Auth.logout();
-    navigate('login');
     return;
   }
 }
@@ -261,12 +273,14 @@ let _unsubs = [];
 export async function mount(container) {
   _loadCSS();
   container.innerHTML = _template();
+
   _render();
 
   _unsubs = [
     State.subscribe('currentEmployee', _render),
-    State.subscribe('settings', _render),
     State.subscribe('apiMode', _renderApiStatus),
+    State.subscribe('settings', () => { _renderBalanceRow(); _renderWorkModel(); }),
+    State.subscribe('totalWorkMs', _renderBalanceRow),
   ];
 
   container.addEventListener('click', _handleClick);

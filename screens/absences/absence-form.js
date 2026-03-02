@@ -84,7 +84,7 @@ function _buildModalHTML(type, prefill = {}) {
     fieldsHTML = `
       <div class="form-row">
         <div style="text-align:center;padding:12px;background:var(--bg-card);border-radius:var(--radius-md);margin-bottom:16px;">
-          <div style="font-size:24px;font-weight:800;color:var(--fluxs-lime)">${overtimeSign}${overtimeH}:${String(overtimeM).padStart(2,'0')}</div>
+          <div style="font-size:24px;font-weight:800;color:var(--fluxs-lime)">${overtimeSign}${overtimeH}:${String(overtimeM).padStart(2,'00')}</div>
           <div style="font-size:12px;color:var(--text-muted)">aktuelle überstunden</div>
         </div>
       </div>
@@ -223,18 +223,19 @@ function _submit() {
     const vertreter = $('absFormVertreter')?.value || '';
     const auVorhanden = $('absFormAuCheck')?.checked || false;
 
-    if (!start) { showToast('Bitte Startdatum angeben', 'error'); return; }
+    if (!start) { showToast('Bitte Datum angeben', 'error'); return; }
     if (end < start) { showToast('Enddatum muss nach Startdatum liegen', 'error'); return; }
 
-    const days = _countWeekdays(start, end);
+    const typeLabels = {
+      urlaub: 'Urlaub', krank: 'Krankmeldung', kindkrank: 'Kind krank',
+      ueberstundenausgleich: 'Überstundenausgleich',
+    };
 
     request = {
       id: _editId || ('abs-' + Date.now()),
       type,
-      label: _typeMeta[type]?.label || type,
-      start,
-      end,
-      days,
+      label: typeLabels[type] || type,
+      start, end,
       comment,
       vertreter,
       auVorhanden,
@@ -242,68 +243,107 @@ function _submit() {
     };
   }
 
-  // Update state
-  const existing = State.get('absenceRequests') || [];
+  // Save to state
+  const requests = State.get('absenceRequests') || [];
   if (_editId) {
-    State.set('absenceRequests', existing.map(r => r.id === _editId ? request : r));
+    const idx = requests.findIndex(a => a.id === _editId);
+    if (idx !== -1) requests[idx] = request;
+    else requests.push(request);
   } else {
-    State.set('absenceRequests', [...existing, request]);
+    requests.push(request);
+  }
+  State.set('absenceRequests', [...requests]);
+
+  // AU reminder for krank > 2 days
+  if (type === 'krank') {
+    const days = _countWeekdays(request.start, request.end);
+    if (days > 2) {
+      showToast('Denke daran, eine AU-Bescheinigung einzureichen.', 'warning');
+      setTimeout(() => showToast('Krankmeldung eingereicht', 'success'), 2000);
+    } else {
+      showToast('Krankmeldung eingereicht', 'success');
+    }
+  } else {
+    showToast('Antrag eingereicht – ausstehend', 'success');
   }
 
-  showToast('Antrag gespeichert', 'success');
-  close();
-  if (_onSubmitCb) _onSubmitCb(request);
+  _close();
+  if (_onSubmitCb) _onSubmitCb();
 }
 
-// ─── Public API ───────────────────────────────────────────────────────────────
+// ─── Open / Close ─────────────────────────────────────────────────────────────
 
-export function open(type, options = {}) {
-  _currentType = type;
-  _editId = options.editId || null;
-  _onSubmitCb = options.onSubmit || null;
+function _attachListeners() {
+  const modal = $('absenceFormModal');
+  if (!modal) return;
 
-  // Remove old modal if any
-  const old = document.getElementById('absenceFormModal');
-  if (old) old.closest('.modal-overlay')?.remove() || old.remove();
-
-  const prefill = options.prefill || {};
-  const wrapper = document.createElement('div');
-  wrapper.innerHTML = _buildModalHTML(type, prefill);
-  _modalEl = wrapper.firstElementChild;
-  document.body.appendChild(_modalEl);
-
-  // Populate dropdowns
-  if (type === 'urlaub' || type === 'kindkrank') {
-    _populateVertreter('absFormVertreter');
-  }
-
-  // Krank: live AU check
-  if (type === 'krank') {
-    const startEl = $('absFormStart');
-    const endEl = $('absFormEnd');
-    if (startEl) startEl.addEventListener('change', _updateKrankAU);
-    if (endEl) endEl.addEventListener('change', _updateKrankAU);
-    _updateKrankAU();
-  }
-
-  // Buttons
-  $('absFormCancel')?.addEventListener('click', close);
+  $('absFormCancel')?.addEventListener('click', _close);
   $('absFormSubmit')?.addEventListener('click', _submit);
 
-  // Show
-  requestAnimationFrame(() => {
-    _modalEl.classList.add('open');
-    _modalEl.setAttribute('aria-hidden', 'false');
+  // Backdrop close
+  modal.addEventListener('click', (e) => {
+    if (e.target === modal) _close();
   });
+
+  // Krank: update AU visibility on date change
+  if (_currentType === 'krank') {
+    $('absFormStart')?.addEventListener('change', _updateKrankAU);
+    $('absFormEnd')?.addEventListener('change', _updateKrankAU);
+  }
+
+  // Populate vertreter dropdowns
+  if (_currentType === 'urlaub' || _currentType === 'kindkrank') {
+    _populateVertreter('absFormVertreter');
+  }
 }
 
-export function close() {
-  if (_modalEl) {
-    _modalEl.classList.remove('open');
-    _modalEl.setAttribute('aria-hidden', 'true');
-    setTimeout(() => {
-      _modalEl?.remove();
-      _modalEl = null;
-    }, 300);
+function _close() {
+  const modal = $('absenceFormModal');
+  if (modal) {
+    modal.classList.remove('open');
+    modal.setAttribute('aria-hidden', 'true');
+    setTimeout(() => { modal.remove(); _modalEl = null; }, 300);
   }
+}
+
+export function open(type, onSubmit) {
+  _currentType = type;
+  _editId = null;
+  _onSubmitCb = onSubmit;
+  _inject(_buildModalHTML(type));
+  setTimeout(() => {
+    const modal = $('absenceFormModal');
+    if (modal) { modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); }
+  }, 10);
+}
+
+export function openEdit(absId, onSubmit) {
+  const requests = State.get('absenceRequests') || [];
+  const abs = requests.find(a => a.id === absId);
+  if (!abs) return;
+  _currentType = abs.type;
+  _editId = absId;
+  _onSubmitCb = onSubmit;
+  _inject(_buildModalHTML(abs.type, abs));
+  setTimeout(() => {
+    const modal = $('absenceFormModal');
+    if (modal) { modal.classList.add('open'); modal.setAttribute('aria-hidden', 'false'); }
+  }, 10);
+}
+
+function _inject(html) {
+  const existing = $('absenceFormModal');
+  if (existing) existing.remove();
+  document.body.insertAdjacentHTML('beforeend', html);
+  _modalEl = $('absenceFormModal');
+  _attachListeners();
+}
+
+export function destroy() {
+  const modal = $('absenceFormModal');
+  if (modal) modal.remove();
+  _modalEl = null;
+  _currentType = null;
+  _editId = null;
+  _onSubmitCb = null;
 }

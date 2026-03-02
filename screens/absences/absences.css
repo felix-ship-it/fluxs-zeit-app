@@ -1,383 +1,394 @@
-/* ─── Absences Screen ──────────────────────────────────────────────────────────
-   All styles scoped to .screen-absences and .absence-* classes.
-   Max 500 lines.
-───────────────────────────────────────────────────────────────────────────── */
+/* ─── Absences Screen ─────────────────────────────────────────────────────── */
 
-/* ─── Screen Layout ─────────────────────────────────────────────────────────── */
-
-.screen-absences {
-  display: flex;
-  flex-direction: column;
-  min-height: 100vh;
-  background: var(--bg-base);
-  padding-bottom: 80px; /* bottom nav */
+.absences-screen {
+  padding: var(--space-4);
 }
 
-.absences-header {
-  padding: 20px 20px 12px;
-  background: var(--bg-surface);
-  border-bottom: 1px solid var(--border);
-}
+/* ─── Section Heading ─────────────────────────────────────────────────────── */
 
-.absences-title {
-  font-size: 22px;
-  font-weight: 800;
-  color: var(--text-primary);
-  margin-bottom: 4px;
-  letter-spacing: -0.5px;
-}
-
-.absences-subtitle {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-/* ─── Vacation Balance Card ──────────────────────────────────────────────────── */
-
-.vacation-balance-card {
-  margin: 16px 16px 0;
-  background: var(--bg-card);
-  border-radius: var(--radius-lg);
-  padding: 16px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
-  border: 1px solid var(--border);
-}
-
-.vacation-balance-icon {
-  font-size: 32px;
-  flex-shrink: 0;
-}
-
-.vacation-balance-info {
-  flex: 1;
-}
-
-.vacation-balance-days {
-  font-size: 28px;
-  font-weight: 800;
+.screen-section-title {
+  font-family: 'Adonis', serif;
+  font-size: 20px;
+  font-weight: 400;
+  text-transform: lowercase;
   color: var(--fluxs-lime);
-  line-height: 1;
-  font-family: var(--font-mono);
+  margin-bottom: var(--space-4);
 }
 
-.vacation-balance-label {
-  font-size: 12px;
-  color: var(--text-muted);
-  margin-top: 2px;
+/* ─── Absence Status Text Lines ───────────────────────────────────────────── */
+
+.absence-status-section {
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
+  margin-bottom: var(--space-6);
 }
 
-.vacation-balance-meta {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 4px;
+.absence-status-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: var(--space-2) 0;
+  border-bottom: 1px solid var(--border-subtle);
+  font-size: 13px;
 }
 
-/* ─── New Absence Buttons ────────────────────────────────────────────────────── */
-
-.new-absence-section {
-  padding: 16px 16px 0;
+.absence-status-row:last-child {
+  border-bottom: none;
+  padding-bottom: 0;
 }
 
-.new-absence-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 10px;
+.absence-status-row-label {
+  color: var(--text-secondary);
+  flex: 1;
+  padding-right: var(--space-3);
+  line-height: 1.4;
 }
 
-.new-absence-grid {
+.absence-status-row-value {
+  color: var(--text-primary);
+  font-weight: 800;
+  white-space: nowrap;
+}
+
+.absence-status-row-value.lime { color: var(--fluxs-lime); }
+.absence-status-row-value.orange { color: var(--fluxs-orange); }
+
+/* ─── Absence Type Cards — 2x2 grid ─────────────────────────────────────── */
+
+.absence-types-grid {
   display: grid;
   grid-template-columns: 1fr 1fr;
-  gap: 10px;
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
 }
 
-.absence-type-btn {
-  display: flex;
-  align-items: center;
-  gap: 10px;
+.absence-type-card {
   background: var(--bg-card);
-  border: 1px solid var(--border);
-  border-radius: var(--radius-md);
-  padding: 12px 14px;
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  padding: var(--space-4);
   cursor: pointer;
-  transition: background 0.15s, border-color 0.15s;
-  text-align: left;
-}
-
-.absence-type-btn:active {
-  background: var(--bg-hover);
-  border-color: var(--fluxs-teal);
-}
-
-.absence-type-btn .btn-icon {
-  font-size: 20px;
-  flex-shrink: 0;
-}
-
-.absence-type-btn .btn-label {
-  font-size: 13px;
-  font-weight: 600;
-  color: var(--text-primary);
-  line-height: 1.2;
-}
-
-.absence-type-btn .btn-sub {
-  font-size: 11px;
-  color: var(--text-muted);
-  margin-top: 2px;
-}
-
-/* ─── Absence List ───────────────────────────────────────────────────────────── */
-
-.absences-list-section {
-  padding: 20px 16px 0;
-}
-
-.absences-list-title {
-  font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.08em;
-  margin-bottom: 12px;
-}
-
-.absences-list {
+  transition: all var(--duration-fast) var(--ease-out);
+  text-align: center;
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  align-items: center;
+  gap: var(--space-2);
+  -webkit-tap-highlight-color: transparent;
 }
 
-.absence-card {
-  background: var(--bg-card);
-  border-radius: var(--radius-md);
-  padding: 14px 16px;
-  border: 1px solid var(--border);
+.absence-type-card:hover {
+  background: var(--bg-card-hover);
+  border-color: var(--border-light);
+}
+
+.absence-type-card:active {
+  transform: scale(0.97);
+}
+
+.absence-type-icon {
+  width: 40px;
+  height: 40px;
+  border-radius: var(--radius-full);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 20px;
+}
+
+.absence-type-icon.urlaub    { background: rgba(231, 248, 131, 0.15); }
+.absence-type-icon.krank     { background: rgba(255, 188, 125, 0.15); }
+.absence-type-icon.kindkrank { background: rgba(96, 165, 250, 0.15); }
+.absence-type-icon.ueberstunden { background: rgba(52, 211, 153, 0.15); }
+
+.absence-type-label {
+  font-size: 12px;
+  font-weight: 800;
+  color: var(--text-primary);
+  text-align: center;
+  line-height: 1.3;
+}
+
+/* ─── Absence History List ────────────────────────────────────────────────── */
+
+.absence-list-title {
+  font-family: 'Adonis', serif;
+  font-size: 16px;
+  font-weight: 400;
+  text-transform: lowercase;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.absence-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.absence-request-card {
   display: flex;
   align-items: flex-start;
-  gap: 12px;
-  cursor: pointer;
-  transition: background 0.15s;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
 }
 
-.absence-card:active {
-  background: var(--bg-hover);
-}
-
-.absence-card-icon {
-  font-size: 22px;
+.absence-request-indicator {
+  width: 4px;
+  align-self: stretch;
+  border-radius: var(--radius-full);
   flex-shrink: 0;
-  margin-top: 2px;
 }
 
-.absence-card-body {
+.absence-request-indicator.approved { background: var(--color-success); }
+.absence-request-indicator.pending  { background: var(--fluxs-orange); }
+.absence-request-indicator.rejected { background: var(--color-error); }
+
+.absence-request-info {
   flex: 1;
   min-width: 0;
 }
 
-.absence-card-label {
-  font-size: 15px;
-  font-weight: 700;
-  color: var(--text-primary);
-  margin-bottom: 2px;
-}
-
-.absence-card-dates {
+.absence-request-type {
   font-size: 13px;
-  color: var(--text-secondary);
-  margin-bottom: 4px;
+  font-weight: 800;
+  color: var(--text-primary);
 }
 
-.absence-card-days {
+.absence-request-dates {
   font-size: 12px;
   color: var(--text-muted);
-}
-
-.absence-card-status {
-  flex-shrink: 0;
   margin-top: 2px;
 }
 
-/* ─── Status Pills ───────────────────────────────────────────────────────────── */
-
-.status-pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 5px;
-  padding: 3px 10px;
-  border-radius: 999px;
+.absence-request-comment {
   font-size: 11px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.status-pill.pending {
-  background: rgba(255, 193, 7, 0.15);
-  color: #ffc107;
-  border: 1px solid rgba(255, 193, 7, 0.3);
-}
-
-.status-pill.approved {
-  background: rgba(22, 192, 130, 0.15);
-  color: var(--fluxs-lime);
-  border: 1px solid rgba(22, 192, 130, 0.3);
-}
-
-.status-pill.rejected {
-  background: rgba(239, 68, 68, 0.15);
-  color: #ef4444;
-  border: 1px solid rgba(239, 68, 68, 0.3);
-}
-
-.status-pill.cancelled {
-  background: rgba(107, 114, 128, 0.15);
   color: var(--text-muted);
-  border: 1px solid rgba(107, 114, 128, 0.3);
+  margin-top: 2px;
 }
 
-.status-pill .pill-dot {
-  width: 6px;
-  height: 6px;
-  border-radius: 50%;
-  background: currentColor;
-}
-
-/* ─── Empty State ────────────────────────────────────────────────────────────── */
-
-.absences-empty {
-  text-align: center;
-  padding: 40px 24px;
-  color: var(--text-muted);
-}
-
-.absences-empty-icon {
-  font-size: 48px;
-  margin-bottom: 12px;
-  opacity: 0.5;
-}
-
-.absences-empty-text {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--text-secondary);
-  margin-bottom: 6px;
-}
-
-.absences-empty-sub {
-  font-size: 13px;
-  color: var(--text-muted);
-}
-
-/* ─── Absence Detail Modal ───────────────────────────────────────────────────── */
-
-.absence-detail-section {
-  margin-bottom: 16px;
-}
-
-.absence-detail-label {
+.absence-request-status {
   font-size: 11px;
-  font-weight: 700;
-  color: var(--text-muted);
-  text-transform: uppercase;
-  letter-spacing: 0.07em;
-  margin-bottom: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-full);
+  font-weight: 800;
+  white-space: nowrap;
 }
 
-.absence-detail-value {
-  font-size: 15px;
-  color: var(--text-primary);
-  font-weight: 500;
-}
+.absence-request-status.approved { background: rgba(52, 211, 153, 0.15); color: var(--color-success); }
+.absence-request-status.pending  { background: rgba(255, 188, 125, 0.15); color: var(--fluxs-orange); }
+.absence-request-status.rejected { background: rgba(248, 113, 113, 0.15); color: var(--color-error); }
 
-.absence-detail-actions {
+.absence-request-actions {
   display: flex;
-  gap: 10px;
-  margin-top: 20px;
+  gap: var(--space-2);
+  margin-top: var(--space-1);
 }
 
-.absence-detail-actions .btn-danger {
-  flex: 1;
-  padding: 12px;
-  background: rgba(239, 68, 68, 0.1);
-  border: 1px solid rgba(239, 68, 68, 0.3);
-  border-radius: var(--radius-md);
-  color: #ef4444;
-  font-size: 14px;
-  font-weight: 700;
+.absence-action-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: var(--radius-sm);
+  border: 1px solid var(--border-subtle);
+  background: transparent;
+  color: var(--text-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
 }
 
-.absence-detail-actions .btn-secondary {
-  flex: 1;
-  padding: 12px;
-  background: var(--bg-card);
-  border: 1px solid var(--border);
+.absence-action-btn:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+.absence-action-btn.danger:hover { border-color: var(--color-error); color: var(--color-error); }
+
+.absence-past-title {
+  font-size: 11px;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: .05em;
+  color: var(--text-muted);
+  margin: var(--space-5) 0 var(--space-2);
+}
+
+/* ─── Modal Overlay ───────────────────────────────────────────────────────── */
+
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.6);
+  z-index: var(--z-modal);
+  display: flex;
+  align-items: flex-end;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity var(--duration-normal) var(--ease-out);
+}
+
+.modal-overlay.open {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.modal-sheet {
+  width: 100%;
+  max-width: 640px;
+  margin: 0 auto;
+  background: var(--bg-secondary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0;
+  padding: var(--space-6) var(--space-4) var(--space-8);
+  transform: translateY(100%);
+  transition: transform var(--duration-normal) var(--ease-out);
+}
+
+.modal-overlay.open .modal-sheet {
+  transform: translateY(0);
+}
+
+.modal-handle {
+  width: 36px;
+  height: 4px;
+  background: var(--border-light);
+  border-radius: var(--radius-full);
+  margin: 0 auto var(--space-5);
+}
+
+.modal-title {
+  font-family: 'Adonis', serif;
+  font-size: 20px;
+  font-weight: 400;
+  text-transform: lowercase;
+  color: var(--fluxs-lime);
+  margin-bottom: var(--space-5);
+}
+
+/* ─── Form Styles ─────────────────────────────────────────────────────────── */
+
+.form-row {
+  margin-bottom: var(--space-4);
+}
+
+.form-label {
+  display: block;
+  font-size: 12px;
+  color: var(--text-muted);
+  margin-bottom: var(--space-1);
+  text-transform: uppercase;
+  letter-spacing: .05em;
+}
+
+.form-input,
+.form-select {
+  width: 100%;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
   border-radius: var(--radius-md);
-  color: var(--text-secondary);
+  color: var(--text-primary);
+  font-family: 'Moderat Mono', monospace;
   font-size: 14px;
-  font-weight: 700;
-  cursor: pointer;
+  transition: border-color var(--duration-fast) var(--ease-out);
+  -webkit-appearance: none;
 }
 
-/* ─── Form Styles (Absence Form Modal) ──────────────────────────────────────── */
+.form-input:focus,
+.form-select:focus {
+  outline: none;
+  border-color: var(--fluxs-lime);
+}
+
+.form-select option { background: var(--fluxs-green); }
+
+.form-row-inline {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-3);
+  margin-bottom: var(--space-4);
+}
 
 .form-info {
   font-size: 12px;
   color: var(--text-muted);
-  background: var(--bg-card);
-  border-radius: var(--radius-sm);
-  padding: 8px 12px;
-  margin-bottom: 14px;
-  border-left: 3px solid var(--fluxs-teal);
-}
-
-.form-row-inline {
-  display: flex;
-  gap: 12px;
-}
-
-.form-row-inline .form-row {
-  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  background: rgba(255, 188, 125, 0.08);
+  border: 1px solid rgba(255, 188, 125, 0.2);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-3);
 }
 
 .form-checkbox-row {
   display: flex;
   align-items: center;
-  gap: 8px;
-  padding: 10px 12px;
-  background: var(--bg-card);
-  border-radius: var(--radius-sm);
-  margin-bottom: 12px;
+  gap: var(--space-3);
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-input);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-4);
   cursor: pointer;
-  border: 1px solid var(--border);
 }
 
 .form-checkbox-row input[type="checkbox"] {
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   accent-color: var(--fluxs-lime);
-  cursor: pointer;
+  flex-shrink: 0;
 }
 
 .form-checkbox-label {
   font-size: 13px;
   color: var(--text-secondary);
-  font-weight: 500;
 }
 
-/* ─── Responsive adjustments ────────────────────────────────────────────────── */
-
-@media (max-width: 380px) {
-  .new-absence-grid {
-    grid-template-columns: 1fr;
-  }
-
-  .vacation-balance-days {
-    font-size: 24px;
-  }
+.form-actions {
+  display: flex;
+  gap: var(--space-3);
+  margin-top: var(--space-5);
 }
+
+.btn-primary {
+  flex: 1;
+  padding: var(--space-3) var(--space-4);
+  background: var(--fluxs-lime);
+  color: var(--fluxs-green-dark);
+  border: none;
+  border-radius: var(--radius-full);
+  font-family: 'Moderat Mono', monospace;
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.btn-primary:hover { filter: brightness(1.05); }
+.btn-primary:active { transform: scale(0.98); }
+
+.btn-secondary {
+  padding: var(--space-3) var(--space-4);
+  background: transparent;
+  color: var(--text-secondary);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-full);
+  font-family: 'Moderat Mono', monospace;
+  font-size: 13px;
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.btn-secondary:hover { background: var(--bg-card-hover); color: var(--text-primary); }
+
+/* ─── Empty State ─────────────────────────────────────────────────────────── */
+
+.empty-state {
+  text-align: center;
+  padding: var(--space-10) 0;
+  color: var(--text-muted);
+}
+
+.empty-state-icon { font-size: 32px; margin-bottom: var(--space-3); }
+.empty-state-text { font-size: 13px; }

@@ -43,7 +43,7 @@ function _fmtMs(ms) {
   return `${sign}${h}:${String(m).padStart(2, '0')}`;
 }
 
-// ─── Vacation Stats ───────────────────────────────────────────────────────────────
+// ─── Vacation Stats ──────────────────────────────────────────────────────────
 
 function _getVacationStats() {
   const yearStr = String(new Date().getFullYear());
@@ -66,7 +66,7 @@ function _getOvertimeMs() {
   return (emp.overtimeMs || 0) + totalWorkMs - ((settings.dayHours || 8) * 3600000);
 }
 
-// ─── Template ─────────────────────────────────────────────────────────────────
+// ─── Template ───────────────────────────────────────────────────────────────
 
 function _template() {
   return `
@@ -103,7 +103,7 @@ function _template() {
   `;
 }
 
-// ─── Render Status ──────────────────────────────────────────────────────────────
+// ─── Render Status ───────────────────────────────────────────────────────────
 
 function _renderStatus() {
   const section = $('absenceStatusSection');
@@ -130,7 +130,7 @@ function _renderStatus() {
   `;
 }
 
-// ─── Render List ────────────────────────────────────────────────────────────────
+// ─── Render List ─────────────────────────────────────────────────────────────
 
 function _renderList() {
   const container = $('absenceList');
@@ -199,7 +199,7 @@ function _renderList() {
   container.innerHTML = html;
 }
 
-// ─── Event Handling ──────────────────────────────────────────────────────────────
+// ─── Event Handling ──────────────────────────────────────────────────────────
 
 function _handleClick(e) {
   // Type card → open form
@@ -241,12 +241,12 @@ function _deleteAbsence(absId) {
   showToast('Abwesenheit storniert', 'info');
 }
 
-// ─── Subscriptions ───────────────────────────────────────────────────────────────
+// ─── Subscriptions ───────────────────────────────────────────────────────────
 
 let _unsubs = [];
 let _container = null;
 
-// ─── Mount / Unmount ─────────────────────────────────────────────────────────────
+// ─── Mount / Unmount ─────────────────────────────────────────────────────────
 
 export async function mount(container) {
   _loadCSS();

@@ -1,0 +1,245 @@
+/* ─── Projects Screen ────────────────────────────────────────────────────── */
+
+.projects-screen {
+  padding: var(--space-4);
+}
+
+.proj-screen-title {
+  font-family: 'Adonis', serif;
+  font-size: 22px;
+  text-transform: lowercase;
+  color: var(--fluxs-lime);
+  margin-bottom: var(--space-4);
+}
+
+/* ─── Tabs ────────────────────────────────────────────────────────────────── */
+
+.proj-tabs {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.proj-tab {
+  padding: var(--space-2) var(--space-4);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+  font-size: 13px;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.proj-tab:hover { background: var(--bg-card-hover); }
+
+.proj-tab.active {
+  background: var(--fluxs-lime);
+  color: var(--fluxs-green-dark);
+  border-color: var(--fluxs-lime);
+  font-weight: 800;
+}
+
+/* ─── Create Form ─────────────────────────────────────────────────────────── */
+
+.proj-create-form {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-5);
+}
+
+.proj-name-input {
+  flex: 1;
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: 'Moderat Mono', monospace;
+  font-size: 13px;
+  outline: none;
+}
+
+.proj-name-input:focus {
+  border-color: var(--fluxs-lime);
+  box-shadow: 0 0 0 2px rgba(231, 249, 131, 0.15);
+}
+
+.btn-proj-create {
+  padding: var(--space-2) var(--space-3);
+  background: var(--fluxs-lime);
+  color: var(--fluxs-green-dark);
+  border: none;
+  border-radius: var(--radius-lg);
+  font-size: 13px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out);
+  -webkit-tap-highlight-color: transparent;
+}
+
+.btn-proj-create:hover { filter: brightness(1.05); }
+
+/* ─── Project List ────────────────────────────────────────────────────────── */
+
+.proj-active-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.proj-item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: var(--space-3) var(--space-4);
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-subtle);
+}
+
+.proj-item--archived {
+  opacity: 0.5;
+}
+
+.proj-item-name {
+  font-size: 14px;
+  color: var(--text-primary);
+  flex: 1;
+  margin-right: var(--space-3);
+}
+
+.proj-item-btn {
+  padding: var(--space-1) var(--space-3);
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+  font-size: 11px;
+  color: var(--text-muted);
+  cursor: pointer;
+  transition: all var(--duration-fast) var(--ease-out);
+  white-space: nowrap;
+}
+
+.btn-archive:hover {
+  border-color: var(--fluxs-orange);
+  color: var(--fluxs-orange);
+}
+
+.btn-restore:hover {
+  border-color: var(--color-success);
+  color: var(--color-success);
+}
+
+.proj-section-label {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  margin-bottom: var(--space-2);
+}
+
+.proj-archived-section {
+  margin-top: var(--space-4);
+}
+
+/* ─── Eval Filters ────────────────────────────────────────────────────────── */
+
+.proj-eval-filters {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-2);
+  margin-bottom: var(--space-4);
+}
+
+.proj-select {
+  padding: var(--space-2) var(--space-3);
+  background: var(--bg-card);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-lg);
+  color: var(--text-primary);
+  font-family: 'Moderat Mono', monospace;
+  font-size: 13px;
+  outline: none;
+  flex: 1;
+  min-width: 120px;
+}
+
+.proj-select option { background: var(--fluxs-green-dark); }
+
+.btn-proj-export {
+  padding: var(--space-2) var(--space-3);
+  background: transparent;
+  color: var(--fluxs-lime);
+  border: 1px solid var(--fluxs-lime);
+  border-radius: var(--radius-lg);
+  font-size: 12px;
+  font-weight: 800;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.btn-proj-export:hover { background: rgba(231, 249, 131, 0.1); }
+
+/* ─── Eval Total ──────────────────────────────────────────────────────────── */
+
+.proj-eval-total,
+.proj-total {
+  font-size: 13px;
+  color: var(--text-secondary);
+  margin-bottom: var(--space-3);
+}
+
+.proj-eval-total strong,
+.proj-total strong {
+  color: var(--fluxs-lime);
+  font-family: 'Moderat Mono', monospace;
+}
+
+/* ─── Table ───────────────────────────────────────────────────────────────── */
+
+.proj-table-wrap {
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+.proj-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 12px;
+  min-width: 360px;
+}
+
+.proj-table th {
+  text-align: left;
+  padding: var(--space-2) var(--space-2);
+  font-size: 10px;
+  color: var(--text-muted);
+  text-transform: lowercase;
+  letter-spacing: 0.04em;
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.proj-table td {
+  padding: var(--space-2);
+  color: var(--text-secondary);
+  border-bottom: 1px solid var(--border-subtle);
+  white-space: nowrap;
+}
+
+.proj-table tr:last-child td { border-bottom: none; }
+
+.proj-table tr:hover td { background: var(--bg-card); }
+
+/* ─── Empty State ─────────────────────────────────────────────────────────── */
+
+.proj-empty {
+  font-size: 13px;
+  color: var(--text-muted);
+  text-align: center;
+  padding: var(--space-6) 0;
+  font-style: italic;
+}
