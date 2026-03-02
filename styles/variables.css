@@ -1,0 +1,72 @@
+/* ─── FLUXS Zeit App — CSS Variables ─────────────────────────────────────── */
+/* Brand colors, spacing, typography tokens */
+
+:root {
+  /* Brand Colors */
+  --fluxs-green: #055445;
+  --fluxs-green-dark: #002d26;
+  --fluxs-green-light: #0a7a64;
+  --fluxs-lime: #E7F883;
+  --fluxs-lime-dark: #c8d96e;
+  --fluxs-cream: #fbf8eb;
+  --fluxs-orange: #FFBC7D;
+  --fluxs-white: #FFFFFF;
+
+  /* Semantic Colors */
+  --bg-primary: var(--fluxs-green-dark);
+  --bg-secondary: var(--fluxs-green);
+  --bg-card: rgba(255, 255, 255, 0.06);
+  --bg-card-hover: rgba(255, 255, 255, 0.1);
+  --bg-input: rgba(255, 255, 255, 0.08);
+
+  --text-primary: var(--fluxs-white);
+  --text-secondary: rgba(255, 255, 255, 0.7);
+  --text-muted: rgba(255, 255, 255, 0.45);
+  --text-accent: var(--fluxs-lime);
+
+  --border-subtle: rgba(255, 255, 255, 0.08);
+  --border-light: rgba(255, 255, 255, 0.15);
+
+  /* Status Colors */
+  --color-success: #34d399;
+  --color-error: #f87171;
+  --color-warning: var(--fluxs-orange);
+  --color-info: #60a5fa;
+
+  /* Spacing (4px grid) */
+  --space-1: 4px;
+  --space-2: 8px;
+  --space-3: 12px;
+  --space-4: 16px;
+  --space-5: 20px;
+  --space-6: 24px;
+  --space-8: 32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 10px;
+  --radius-lg: 16px;
+  --radius-xl: 24px;
+  --radius-full: 9999px;
+
+  /* Shadows */
+  --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.2);
+  --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.25);
+  --shadow-lg: 0 8px 32px rgba(0, 0, 0, 0.35);
+
+  /* Transitions */
+  --ease-out: cubic-bezier(0.16, 1, 0.3, 1);
+  --duration-fast: 150ms;
+  --duration-normal: 250ms;
+  --duration-slow: 400ms;
+
+  /* Z-Index */
+  --z-nav: 100;
+  --z-header: 200;
+  --z-modal: 500;
+  --z-toast: 600;
+  --z-loader: 900;
+}
