@@ -1,0 +1,165 @@
+/* ─── Monthly Overview Screen ───────────────────────────────────────────────────────────── */
+
+.monthly-screen {
+  padding: var(--space-4);
+}
+
+/* Month Header */
+.monthly-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: var(--space-4);
+}
+
+.monthly-nav-btn {
+  width: 36px;
+  height: 36px;
+  border-radius: var(--radius-full);
+  border: 1px solid var(--border-light);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.monthly-nav-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
+
+.monthly-title {
+  font-family: 'Adonis', serif;
+  font-size: 20px;
+  color: var(--text-primary);
+}
+
+/* Stats Summary */
+.monthly-stats {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: var(--space-3);
+  margin-bottom: var(--space-6);
+}
+
+.monthly-stat-card {
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-2);
+  text-align: center;
+}
+
+.monthly-stat-value {
+  font-size: 18px;
+  font-weight: 800;
+  color: var(--text-accent);
+}
+
+.monthly-stat-label {
+  font-size: 10px;
+  color: var(--text-muted);
+  margin-top: 2px;
+  text-transform: lowercase;
+}
+
+/* Section Title */
+.monthly-section-title {
+  font-family: 'Adonis', serif;
+  font-size: 17px;
+  text-transform: lowercase;
+  margin-bottom: var(--space-3);
+}
+
+/* Day Cards */
+.monthly-day-list {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+  margin-bottom: var(--space-6);
+}
+
+.monthly-day-card {
+  display: flex;
+  align-items: center;
+  background: var(--bg-card);
+  border-radius: var(--radius-md);
+  padding: var(--space-3) var(--space-4);
+  gap: var(--space-3);
+  cursor: pointer;
+  transition: background var(--duration-fast) var(--ease-out);
+}
+
+.monthly-day-card:hover { background: var(--bg-card-hover); }
+
+.monthly-day-card.today {
+  border: 1px solid var(--fluxs-lime);
+}
+
+.monthly-day-date {
+  min-width: 44px;
+}
+
+.monthly-day-name {
+  font-size: 11px;
+  color: var(--text-muted);
+  text-transform: lowercase;
+}
+
+.monthly-day-num {
+  font-size: 20px;
+  font-weight: 800;
+  color: var(--text-primary);
+  line-height: 1;
+}
+
+.monthly-day-info {
+  flex: 1;
+}
+
+.monthly-day-time {
+  font-size: 13px;
+  font-weight: 800;
+  color: var(--text-primary);
+}
+
+.monthly-day-break {
+  font-size: 11px;
+  color: var(--text-muted);
+}
+
+.monthly-day-status {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: var(--bg-card-hover);
+}
+
+.monthly-day-status.approved { background: var(--color-success); }
+.monthly-day-status.pending { background: var(--fluxs-orange); }
+.monthly-day-status.rejected { background: var(--color-error); }
+.monthly-day-status.absent { background: var(--text-muted); }
+
+/* Empty */
+.monthly-empty {
+  text-align: center;
+  padding: var(--space-8) 0;
+  color: var(--text-muted);
+  font-size: 13px;
+}
+
+/* Export Button */
+.monthly-export-btn {
+  width: 100%;
+  padding: var(--space-3);
+  border: 1px solid var(--border-light);
+  border-radius: var(--radius-md);
+  font-size: 13px;
+  color: var(--text-secondary);
+  transition: all var(--duration-fast) var(--ease-out);
+}
+
+.monthly-export-btn:hover {
+  background: var(--bg-card-hover);
+  color: var(--text-primary);
+}
