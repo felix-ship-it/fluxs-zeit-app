@@ -1,6 +1,6 @@
 /**
  * FLUXS Zeit App — Login Screen
- * Email + password form, authenticated against Personio.
+ * Microsoft SSO login via MSAL popup. Demo login on staging.
  * Max 500 lines.
  */
 
@@ -25,9 +25,42 @@ function _loadCSS() {
 // ─── Template ───────────────────────────────────────────────────────────────
 
 function _template() {
-  const demoHint = Env.isStaging()
-    ? `<p class="login-demo-hint">demo-login: demo@fluxs.de / demo</p>`
-    : '';
+  const demoSection = Env.isStaging() ? `
+    <div class="login-divider"><span>oder</span></div>
+    <form class="login-demo-form" id="demoForm" autocomplete="on">
+      <div class="form-field">
+        <label for="demoEmail" class="form-label">e-mail</label>
+        <input
+          type="email"
+          id="demoEmail"
+          name="email"
+          class="form-input"
+          placeholder="demo@fluxs.de"
+          autocomplete="email"
+          inputmode="email"
+          value="demo@fluxs.de"
+        />
+      </div>
+      <div class="form-field">
+        <label for="demoPassword" class="form-label">passwort</label>
+        <input
+          type="password"
+          id="demoPassword"
+          name="password"
+          class="form-input"
+          placeholder="••••••••"
+          autocomplete="current-password"
+          value="demo"
+        />
+      </div>
+      <button type="submit" class="btn-demo-login" id="btnDemoLogin">
+        <span class="btn-login-text">demo anmelden</span>
+        <span class="btn-login-loading" style="display:none">
+          <span class="login-spinner"></span>
+        </span>
+      </button>
+    </form>
+  ` : '';
 
   return `
     <div class="login-screen">
@@ -36,94 +69,82 @@ function _template() {
              style="height:36px;width:auto" />
       </div>
       <h2 class="login-title">fluxs arbeitszeiterfassung</h2>
-      <p class="login-subtitle">logge dich mit deinen personio daten ein</p>
+      <p class="login-subtitle">logge dich mit deinen microsoft daten ein</p>
 
-      <form class="login-form" id="loginForm" autocomplete="on">
-        <div class="form-field">
-          <label for="loginEmail" class="form-label">e-mail</label>
-          <input
-            type="email"
-            id="loginEmail"
-            name="email"
-            class="form-input"
-            placeholder="name@fluxs.de"
-            autocomplete="email"
-            inputmode="email"
-            required
-          />
-        </div>
-
-        <div class="form-field">
-          <label for="loginPassword" class="form-label">passwort</label>
-          <input
-            type="password"
-            id="loginPassword"
-            name="password"
-            class="form-input"
-            placeholder="••••••••"
-            autocomplete="current-password"
-            required
-          />
-        </div>
-
-        <button type="submit" class="btn-login" id="btnLogin">
-          <span class="btn-login-text">anmelden</span>
-          <span class="btn-login-loading" style="display:none">
-            <span class="login-spinner"></span>
+      <div class="login-sso-wrapper">
+        <button class="btn-sso" id="btnSSO">
+          <svg class="btn-sso-icon" viewBox="0 0 21 21" xmlns="http://www.w3.org/2000/svg">
+            <rect x="1" y="1" width="9" height="9" fill="#f25022"/>
+            <rect x="11" y="1" width="9" height="9" fill="#7fba00"/>
+            <rect x="1" y="11" width="9" height="9" fill="#00a4ef"/>
+            <rect x="11" y="11" width="9" height="9" fill="#ffb900"/>
+          </svg>
+          <span class="btn-sso-text">mit microsoft anmelden</span>
+          <span class="btn-sso-loading" style="display:none">
+            <span class="login-spinner login-spinner-dark"></span>
           </span>
         </button>
-
         <div class="login-error" id="loginError" style="display:none"></div>
-      </form>
+      </div>
 
-      ${demoHint}
+      ${demoSection}
     </div>
   `;
 }
 
-// ─── Form Submit Handler ───────────────────────────────────────────────────
+// ─── SSO Handler ────────────────────────────────────────────────────────────
 
-async function _handleSubmit(e) {
-  e.preventDefault();
-
-  const emailInput = document.getElementById('loginEmail');
-  const pwInput = document.getElementById('loginPassword');
-  const btn = document.getElementById('btnLogin');
+async function _handleSSO() {
+  const btn = document.getElementById('btnSSO');
   const errDiv = document.getElementById('loginError');
 
-  const email = (emailInput?.value || '').trim();
-  const password = (pwInput?.value || '').trim();
+  _setSSOLoading(true);
+  if (errDiv) errDiv.style.display = 'none';
+
+  const result = await Auth.loginWithSSO();
+
+  if (!result.success) {
+    _setSSOLoading(false);
+    _showError(result.error || 'SSO-Anmeldung fehlgeschlagen');
+  }
+  // On success, Auth navigates to dashboard — no further action needed
+}
+
+function _setSSOLoading(loading) {
+  const btn = document.getElementById('btnSSO');
+  const textEl = btn?.querySelector('.btn-sso-text');
+  const loadEl = btn?.querySelector('.btn-sso-loading');
+  if (btn) btn.disabled = loading;
+  if (textEl) textEl.style.display = loading ? 'none' : 'inline';
+  if (loadEl) loadEl.style.display = loading ? 'inline-flex' : 'none';
+}
+
+// ─── Demo Form Handler ───────────────────────────────────────────────────────
+
+async function _handleDemoSubmit(e) {
+  e.preventDefault();
+  const email = (document.getElementById('demoEmail')?.value || '').trim();
+  const password = (document.getElementById('demoPassword')?.value || '').trim();
 
   if (!email || !password) {
     _showError('bitte e-mail und passwort eingeben');
     return;
   }
 
-  // Show loading
-  _setLoading(true);
-  errDiv.style.display = 'none';
+  const btn = document.getElementById('btnDemoLogin');
+  if (btn) btn.disabled = true;
+  const textEl = btn?.querySelector('.btn-login-text');
+  const loadEl = btn?.querySelector('.btn-login-loading');
+  if (textEl) textEl.style.display = 'none';
+  if (loadEl) loadEl.style.display = 'inline-flex';
 
   const result = await Auth.login(email, password);
 
   if (!result.success) {
-    _setLoading(false);
-    // Error toast is already shown by Auth.login
+    if (btn) btn.disabled = false;
+    if (textEl) textEl.style.display = 'inline';
+    if (loadEl) loadEl.style.display = 'none';
   }
-}
-
-function _setLoading(loading) {
-  const btn = document.getElementById('btnLogin');
-  const textEl = btn?.querySelector('.btn-login-text');
-  const loadEl = btn?.querySelector('.btn-login-loading');
-  const form = document.getElementById('loginForm');
-
-  if (btn) btn.disabled = loading;
-  if (textEl) textEl.style.display = loading ? 'none' : 'inline';
-  if (loadEl) loadEl.style.display = loading ? 'inline-flex' : 'none';
-
-  // Disable inputs during login
-  const inputs = form?.querySelectorAll('input');
-  inputs?.forEach(i => { i.disabled = loading; });
 }
 
 function _showError(msg) {
@@ -134,38 +155,17 @@ function _showError(msg) {
   }
 }
 
-// ─── Pre-fill last email ───────────────────────────────────────────────────
-
-async function _prefillEmail() {
-  const lastEmail = await Auth.getLastEmail();
-  if (lastEmail) {
-    const input = document.getElementById('loginEmail');
-    if (input) {
-      input.value = lastEmail;
-      // Focus password instead
-      document.getElementById('loginPassword')?.focus();
-    }
-  }
-}
-
 // ─── Mount / Unmount ────────────────────────────────────────────────────────
 
 export async function mount(container) {
   _loadCSS();
   container.innerHTML = _template();
 
-  // Bind form submit
-  const form = document.getElementById('loginForm');
-  form?.addEventListener('submit', _handleSubmit);
+  // Bind SSO button
+  document.getElementById('btnSSO')?.addEventListener('click', _handleSSO);
 
-  // Pre-fill email from last session
-  await _prefillEmail();
-
-  // Focus email if not pre-filled
-  const emailInput = document.getElementById('loginEmail');
-  if (emailInput && !emailInput.value) {
-    setTimeout(() => emailInput.focus(), 200);
-  }
+  // Bind demo form (staging only)
+  document.getElementById('demoForm')?.addEventListener('submit', _handleDemoSubmit);
 }
 
 export function unmount() {

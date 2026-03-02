@@ -9,7 +9,7 @@
 import * as State from '../../core/state.js';
 import { showToast, formatTime } from '../../core/ui.js';
 
-// ─── Timeline CSS ───────────────────────────────────────────────────────────────
+// ─── Timeline CSS ───────────────────────────────────────────────────────────
 
 const TIMELINE_CSS = `
 .timeline { margin-top: var(--space-4); }
@@ -39,7 +39,7 @@ const TIMELINE_CSS = `
 .timeline-empty { text-align: center; color: var(--text-muted); font-size: 13px; padding: var(--space-6) 0; }
 `;
 
-// ─── Inject CSS ───────────────────────────────────────────────────────────────
+// ─── Inject CSS ─────────────────────────────────────────────────────────────
 
 function _injectCSS() {
   if (!document.getElementById('css-timeline')) {
@@ -50,7 +50,7 @@ function _injectCSS() {
   }
 }
 
-// ─── Render ───────────────────────────────────────────────────────────────────
+// ─── Render ─────────────────────────────────────────────────────────────────
 
 export function render(container) {
   _injectCSS();
@@ -90,7 +90,7 @@ export function render(container) {
   `;
 }
 
-// ─── Handle Edit Click ────────────────────────────────────────────────────────────
+// ─── Handle Edit Click ──────────────────────────────────────────────────────
 
 export function handleEdit(index) {
   const entries = State.get('todayEntries') || [];
@@ -106,22 +106,31 @@ export function handleEdit(index) {
   // Parse new time
   const [h, m] = newTime.split(':').map(Number);
   if (isNaN(h) || isNaN(m)) {
-    showToast('Ungültige Zeit', 'error');
+    showToast('Ungültiges Zeitformat', 'error');
     return;
   }
 
-  const adjusted = new Date(time);
-  adjusted.setHours(h, m, 0, 0);
+  // Check ±5 minute limit
+  const newDate = new Date(time);
+  newDate.setHours(h, m, 0, 0);
+  const diffMin = Math.abs(newDate - time) / 60000;
 
-  // Enforce ±5 min limit
-  const diffMin = (adjusted.getTime() - time.getTime()) / 60000;
-  if (Math.abs(diffMin) > 5) {
-    showToast('Max. ±5 Min. Korrektur erlaubt', 'error');
+  if (diffMin > 5) {
+    showToast('Korrektur max. ±5 Minuten erlaubt', 'error');
     return;
   }
 
-  const updated = [...entries];
-  updated[index] = { ...entry, time: adjusted.toISOString() };
-  State.set('todayEntries', updated);
-  showToast('Zeit korrigiert', 'success');
+  // Auto-approve: update entry
+  State.update('todayEntries', entries => {
+    const updated = [...entries];
+    updated[index] = {
+      ...updated[index],
+      time: newDate.toISOString(),
+      corrected: true,
+      originalTime: entry.time,
+    };
+    return updated;
+  });
+
+  showToast('Zeit korrigiert (auto-genehmigt)', 'success');
 }

@@ -59,6 +59,107 @@ function _generateDemoAbsences() {
   ];
 }
 
+// ─── MSAL Configuration ────────────────────────────────────────────────────
+
+const MSAL_CONFIG = {
+  auth: {
+    clientId: 'YOUR_AZURE_CLIENT_ID',
+    authority: 'https://login.microsoftonline.com/common',
+    redirectUri: window.location.origin,
+  },
+  cache: {
+    cacheLocation: 'memoryStorage',
+    storeAuthStateInCookie: false,
+  },
+};
+
+const SSO_SCOPES = ['user.read', 'email'];
+
+let _msalInstance = null;
+
+function _getMSAL() {
+  if (!_msalInstance) {
+    if (!window.msal) {
+      throw new Error('MSAL.js nicht geladen');
+    }
+    _msalInstance = new window.msal.PublicClientApplication(MSAL_CONFIG);
+  }
+  return _msalInstance;
+}
+
+// ─── SSO Login ──────────────────────────────────────────────────────────────
+
+export async function loginWithSSO() {
+  // Staging demo shortcut
+  if (Env.isStaging() && !window.msal) {
+    Env.log('SSO: MSAL not loaded on staging, falling back to demo');
+    _setEmployee(DEMO_EMPLOYEE, 'demo');
+    return { success: true };
+  }
+
+  try {
+    const msalApp = _getMSAL();
+    const response = await msalApp.loginPopup({
+      scopes: SSO_SCOPES,
+      prompt: 'select_account',
+    });
+
+    const account = response.account;
+    const email = (
+      account?.username ||
+      account?.idTokenClaims?.email ||
+      account?.idTokenClaims?.preferred_username ||
+      ''
+    ).trim().toLowerCase();
+
+    if (!email) {
+      return { success: false, error: 'E-Mail konnte nicht aus Token gelesen werden' };
+    }
+
+    Env.log('SSO: logged in as', email);
+
+    // Verify against Personio
+    let emp = null;
+    try {
+      const result = await API.ssoLogin(email);
+      if (result.success && result.employee) {
+        emp = result.employee;
+        emp.vacation = { total: 28, used: 0 };
+        emp.overtimeMs = 0;
+      } else if (Env.isStaging()) {
+        // On staging, if Personio unreachable, use SSO email in demo employee
+        Env.warn('SSO: Personio not reachable, using demo employee with SSO email');
+        emp = { ...DEMO_EMPLOYEE, email, name: account?.name || email };
+      } else {
+        return { success: false, error: result.error || 'Mitarbeiter nicht gefunden' };
+      }
+    } catch (e) {
+      if (Env.isStaging()) {
+        emp = { ...DEMO_EMPLOYEE, email, name: account?.name || email };
+      } else {
+        return { success: false, error: 'Personio nicht erreichbar' };
+      }
+    }
+
+    _setEmployee(emp, 'real');
+    return { success: true };
+
+  } catch (e) {
+    Env.error('SSO error:', e.message);
+    // User cancelled popup
+    if (e.errorCode === 'user_cancelled' || (e.message || '').includes('user_cancelled')) {
+      return { success: false, error: 'Anmeldung abgebrochen' };
+    }
+    // Staging fallback if popup blocked / MSAL config missing
+    if (Env.isStaging()) {
+      showToast('SSO nicht verfügbar – Demo-Modus', 'info');
+      _setEmployee(DEMO_EMPLOYEE, 'demo');
+      return { success: true };
+    }
+    return { success: false, error: e.message || 'SSO fehlgeschlagen' };
+  }
+}
+
 // ─── Login ─────────────────────────────────────────────────────────────────
 
 export async function login(email, password) {
@@ -190,6 +291,9 @@ export function logout() {
     todayEntries: [],
     attendanceRecords: [],
     absenceRequests: [],
+    activeProject: null,
+    projectStartTime: null,
+    projectAccMs: 0,
     apiMode: 'demo',
   });
   navigate('login');
