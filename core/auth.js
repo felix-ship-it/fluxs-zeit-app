@@ -13,7 +13,7 @@ import * as Env from './env.js';
 import { navigate } from './router.js';
 import { showToast } from './ui.js';
 
-// ─── Demo Employee (Staging fallback) ──────────────────────────────────────
+// ─── Demo Employee (Staging fallback) ──────────────────────────────────
 
 const DEMO_EMPLOYEE = {
   id: 9999,
@@ -28,7 +28,7 @@ const DEMO_EMPLOYEE = {
   overtimeMs: 0,
 };
 
-// ─── Demo Data Generators ──────────────────────────────────────────────────
+// ─── Demo Data Generators ──────────────────────────────────────────
 
 function _generateDemoAttendance(employeeId) {
   const records = [];
@@ -59,38 +59,71 @@ function _generateDemoAbsences() {
   ];
 }
 
-// ─── MSAL Configuration ────────────────────────────────────────────────────
+// ─── MSAL Configuration ────────────────────────────────────────────
+// clientId must be set to your Azure AD Application (Client) ID.
+// See AZURE_SSO_SETUP.md for step-by-step instructions.
 
-const MSAL_CONFIG = {
-  auth: {
-    clientId: 'YOUR_AZURE_CLIENT_ID',
-    authority: 'https://login.microsoftonline.com/common',
-    redirectUri: window.location.origin,
-  },
-  cache: {
-    cacheLocation: 'memoryStorage',
-    storeAuthStateInCookie: false,
-  },
-};
+const MSAL_CLIENT_ID = 'YOUR_AZURE_CLIENT_ID';
+const MSAL_TENANT = 'common';  // 'common' or your tenant ID
 
 const SSO_SCOPES = ['user.read', 'email'];
 
 let _msalInstance = null;
 
+/**
+ * Returns true if a real Azure Client ID is configured (not placeholder).
+ */
+export function isSSOConfigured() {
+  return (
+    typeof MSAL_CLIENT_ID === 'string' &&
+    MSAL_CLIENT_ID.length > 10 &&
+    !MSAL_CLIENT_ID.includes('YOUR_') &&
+    /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(MSAL_CLIENT_ID)
+  );
+}
+
 function _getMSAL() {
+  if (!isSSOConfigured()) {
+    throw new Error('SSO_NOT_CONFIGURED');
+  }
   if (!_msalInstance) {
     if (!window.msal) {
       throw new Error('MSAL.js nicht geladen');
     }
-    _msalInstance = new window.msal.PublicClientApplication(MSAL_CONFIG);
+    _msalInstance = new window.msal.PublicClientApplication({
+      auth: {
+        clientId: MSAL_CLIENT_ID,
+        authority: `https://login.microsoftonline.com/${MSAL_TENANT}`,
+        redirectUri: window.location.origin,
+      },
+      cache: {
+        cacheLocation: 'memoryStorage',
+        storeAuthStateInCookie: false,
+      },
+    });
   }
   return _msalInstance;
 }
 
-// ─── SSO Login ──────────────────────────────────────────────────────────────
+// ─── SSO Login ──────────────────────────────────────────────────────────
 
 export async function loginWithSSO() {
-  // Staging demo shortcut
+  // Check if SSO is configured
+  if (!isSSOConfigured()) {
+    // Staging: fall back to demo
+    if (Env.isStaging()) {
+      Env.warn('SSO: Client ID nicht konfiguriert, Demo-Modus');
+      showToast('SSO noch nicht eingerichtet \u2013 Demo-Modus', 'info');
+      _setEmployee(DEMO_EMPLOYEE, 'demo');
+      return { success: true };
+    }
+    return {
+      success: false,
+      error: 'Microsoft SSO ist noch nicht eingerichtet. Bitte Azure App Registration konfigurieren (siehe AZURE_SSO_SETUP.md).',
+    };
+  }
+
+  // Staging demo shortcut if MSAL lib missing
   if (Env.isStaging() && !window.msal) {
     Env.log('SSO: MSAL not loaded on staging, falling back to demo');
     _setEmployee(DEMO_EMPLOYEE, 'demo');
@@ -127,7 +160,6 @@ export async function loginWithSSO() {
         emp.vacation = { total: 28, used: 0 };
         emp.overtimeMs = 0;
       } else if (Env.isStaging()) {
-        // On staging, if Personio unreachable, use SSO email in demo employee
         Env.warn('SSO: Personio not reachable, using demo employee with SSO email');
         emp = { ...DEMO_EMPLOYEE, email, name: account?.name || email };
       } else {
@@ -146,11 +178,9 @@ export async function loginWithSSO() {
 
   } catch (e) {
     Env.error('SSO error:', e.message);
-    // User cancelled popup
     if (e.errorCode === 'user_cancelled' || (e.message || '').includes('user_cancelled')) {
       return { success: false, error: 'Anmeldung abgebrochen' };
     }
-    // Staging fallback if popup blocked / MSAL config missing
     if (Env.isStaging()) {
       showToast('SSO nicht verfügbar – Demo-Modus', 'info');
       _setEmployee(DEMO_EMPLOYEE, 'demo');
@@ -160,7 +190,7 @@ export async function loginWithSSO() {
   }
 }
 
-// ─── Login ─────────────────────────────────────────────────────────────────
+// ─── Login ─────────────────────────────────────────────────────────────
 
 export async function login(email, password) {
   email = (email || '').trim().toLowerCase();
@@ -171,14 +201,12 @@ export async function login(email, password) {
     return { success: false };
   }
 
-  // Staging demo login shortcut
   if (Env.isStaging() && email === 'demo@fluxs.de' && password === 'demo') {
     Env.log('Demo login (staging)');
     _setEmployee(DEMO_EMPLOYEE, 'demo');
     return { success: true };
   }
 
-  // Real Personio login via backend
   try {
     const result = await API.login(email, password);
 
@@ -193,7 +221,6 @@ export async function login(email, password) {
 
     _setEmployee(emp, 'real');
 
-    // Cache email in IndexedDB for "remember me"
     if (Storage.isAvailable()) {
       await Storage.set(Storage.STORES.SETTINGS, 'lastEmail', email);
     }
@@ -202,7 +229,6 @@ export async function login(email, password) {
   } catch (e) {
     Env.error('Login error:', e.message);
 
-    // Staging fallback: if Personio unreachable, allow demo
     if (Env.isStaging()) {
       showToast('Personio nicht erreichbar – Demo-Modus', 'info');
       _setEmployee(DEMO_EMPLOYEE, 'demo');
@@ -214,7 +240,7 @@ export async function login(email, password) {
   }
 }
 
-// ─── Set Employee & Load Data ──────────────────────────────────────────────
+// ─── Set Employee & Load Data ──────────────────────────────────────────
 
 async function _setEmployee(emp, mode) {
   State.batch({
@@ -222,7 +248,6 @@ async function _setEmployee(emp, mode) {
     apiMode: mode,
   });
 
-  // Load data based on mode
   if (mode === 'real') {
     _loadRealData(emp.id);
   } else if (Env.isStaging()) {
@@ -275,7 +300,7 @@ async function _loadRealData(employeeId) {
   }
 }
 
-// ─── Logout ────────────────────────────────────────────────────────────────
+// ─── Logout ────────────────────────────────────────────────────────────
 
 export function logout() {
   State.batch({
@@ -299,7 +324,7 @@ export function logout() {
   navigate('login');
 }
 
-// ─── Admin Check ───────────────────────────────────────────────────────────
+// ─── Admin Check ───────────────────────────────────────────────────────
 
 export function isAdmin() {
   const emp = State.get('currentEmployee');
@@ -308,7 +333,7 @@ export function isAdmin() {
   return role.includes('leiter') || role.includes('admin') || role.includes('geschäftsführer');
 }
 
-// ─── Get Last Email (for pre-fill) ────────────────────────────────────────
+// ─── Get Last Email (for pre-fill) ──────────────────────────────────────
 
 export async function getLastEmail() {
   if (!Storage.isAvailable()) return null;
