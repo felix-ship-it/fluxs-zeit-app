@@ -1,14 +1,14 @@
 /**
  * FLUXS Zeit App — Login Screen
- * Employee PIN login with Personio lookup.
+ * Email + password form, authenticated against Personio.
  * Max 500 lines.
  */
 
 'use strict';
 
-import * as State from '../../core/state.js';
 import * as Auth from '../../core/auth.js';
-import { $ } from '../../core/ui.js';
+import * as Env from '../../core/env.js';
+import { showToast } from '../../core/ui.js';
 
 // ─── Load CSS ───────────────────────────────────────────────────────────────
 
@@ -22,81 +22,152 @@ function _loadCSS() {
   }
 }
 
-// ─── Template ─────────────────────────────────────────────────────────────────
+// ─── Template ───────────────────────────────────────────────────────────────
 
 function _template() {
+  const demoHint = Env.isStaging()
+    ? `<p class="login-demo-hint">demo-login: demo@fluxs.de / demo</p>`
+    : '';
+
   return `
     <div class="login-screen">
       <div class="login-logo">
-        <svg viewBox="0 0 40 40" fill="none">
-          <rect width="40" height="40" rx="10" fill="#1A2B1F"/>
-          <path d="M10 20 L20 10 L30 20 L20 30 Z" fill="#E7F883"/>
-        </svg>
+        <img src="./assets/logo/fluxs-lime.svg" alt="FLUXS"
+             style="height:36px;width:auto" />
       </div>
-      <h1 class="login-title">fluxs zeit</h1>
-      <p class="login-subtitle">mitarbeiter-login</p>
-      <form class="login-form" id="loginForm" novalidate>
-        <div class="login-field">
-          <label class="login-label" for="loginEmail">e-mail</label>
-          <input class="login-input" type="email" id="loginEmail" autocomplete="email" placeholder="max@firma.de" required />
+      <h2 class="login-title">fluxs arbeitszeiterfassung</h2>
+      <p class="login-subtitle">logge dich mit deinen personio daten ein</p>
+
+      <form class="login-form" id="loginForm" autocomplete="on">
+        <div class="form-field">
+          <label for="loginEmail" class="form-label">e-mail</label>
+          <input
+            type="email"
+            id="loginEmail"
+            name="email"
+            class="form-input"
+            placeholder="name@fluxs.de"
+            autocomplete="email"
+            inputmode="email"
+            required
+          />
         </div>
-        <div class="login-field">
-          <label class="login-label" for="loginPin">pin</label>
-          <input class="login-input" type="password" id="loginPin" autocomplete="current-password" inputmode="numeric" maxlength="6" placeholder="••••" required />
+
+        <div class="form-field">
+          <label for="loginPassword" class="form-label">passwort</label>
+          <input
+            type="password"
+            id="loginPassword"
+            name="password"
+            class="form-input"
+            placeholder="••••••••"
+            autocomplete="current-password"
+            required
+          />
         </div>
-        <div class="login-error" id="loginError"></div>
-        <button class="login-btn" id="loginBtn" type="submit">einloggen</button>
+
+        <button type="submit" class="btn-login" id="btnLogin">
+          <span class="btn-login-text">anmelden</span>
+          <span class="btn-login-loading" style="display:none">
+            <span class="login-spinner"></span>
+          </span>
+        </button>
+
+        <div class="login-error" id="loginError" style="display:none"></div>
       </form>
-      <div class="login-demo-hint">demo: beliebige e-mail + pin 1234</div>
+
+      ${demoHint}
     </div>
   `;
 }
 
-// ─── Handle Submit ──────────────────────────────────────────────────────────────
+// ─── Form Submit Handler ───────────────────────────────────────────────────
 
 async function _handleSubmit(e) {
   e.preventDefault();
-  const email = $('loginEmail')?.value?.trim() || '';
-  const pin = $('loginPin')?.value?.trim() || '';
-  const errorEl = $('loginError');
-  const btn = $('loginBtn');
 
-  // Clear previous error
-  if (errorEl) errorEl.textContent = '';
-  $('loginEmail')?.classList.remove('error');
-  $('loginPin')?.classList.remove('error');
+  const emailInput = document.getElementById('loginEmail');
+  const pwInput = document.getElementById('loginPassword');
+  const btn = document.getElementById('btnLogin');
+  const errDiv = document.getElementById('loginError');
 
-  if (!email || !pin) {
-    if (errorEl) errorEl.textContent = 'bitte e-mail und pin eingeben';
+  const email = (emailInput?.value || '').trim();
+  const password = (pwInput?.value || '').trim();
+
+  if (!email || !password) {
+    _showError('bitte e-mail und passwort eingeben');
     return;
   }
 
-  if (btn) { btn.disabled = true; btn.textContent = 'wird geprüft…'; }
+  // Show loading
+  _setLoading(true);
+  errDiv.style.display = 'none';
 
-  try {
-    const ok = await Auth.login(email, pin);
-    if (!ok) {
-      if (errorEl) errorEl.textContent = 'falsche e-mail oder pin';
-      $('loginEmail')?.classList.add('error');
-      $('loginPin')?.classList.add('error');
-    }
-    // On success, auth module sets currentEmployee → router navigates automatically
-  } catch (err) {
-    if (errorEl) errorEl.textContent = 'anmeldefehler. bitte erneut versuchen.';
-  } finally {
-    if (btn) { btn.disabled = false; btn.textContent = 'einloggen'; }
+  const result = await Auth.login(email, password);
+
+  if (!result.success) {
+    _setLoading(false);
+    // Error toast is already shown by Auth.login
   }
 }
 
-// ─── Mount / Unmount ─────────────────────────────────────────────────────────────
+function _setLoading(loading) {
+  const btn = document.getElementById('btnLogin');
+  const textEl = btn?.querySelector('.btn-login-text');
+  const loadEl = btn?.querySelector('.btn-login-loading');
+  const form = document.getElementById('loginForm');
+
+  if (btn) btn.disabled = loading;
+  if (textEl) textEl.style.display = loading ? 'none' : 'inline';
+  if (loadEl) loadEl.style.display = loading ? 'inline-flex' : 'none';
+
+  // Disable inputs during login
+  const inputs = form?.querySelectorAll('input');
+  inputs?.forEach(i => { i.disabled = loading; });
+}
+
+function _showError(msg) {
+  const errDiv = document.getElementById('loginError');
+  if (errDiv) {
+    errDiv.textContent = msg;
+    errDiv.style.display = 'block';
+  }
+}
+
+// ─── Pre-fill last email ───────────────────────────────────────────────────
+
+async function _prefillEmail() {
+  const lastEmail = await Auth.getLastEmail();
+  if (lastEmail) {
+    const input = document.getElementById('loginEmail');
+    if (input) {
+      input.value = lastEmail;
+      // Focus password instead
+      document.getElementById('loginPassword')?.focus();
+    }
+  }
+}
+
+// ─── Mount / Unmount ────────────────────────────────────────────────────────
 
 export async function mount(container) {
   _loadCSS();
   container.innerHTML = _template();
-  const form = $('loginForm');
-  if (form) form.addEventListener('submit', _handleSubmit);
+
+  // Bind form submit
+  const form = document.getElementById('loginForm');
+  form?.addEventListener('submit', _handleSubmit);
+
+  // Pre-fill email from last session
+  await _prefillEmail();
+
+  // Focus email if not pre-filled
+  const emailInput = document.getElementById('loginEmail');
+  if (emailInput && !emailInput.value) {
+    setTimeout(() => emailInput.focus(), 200);
+  }
 }
 
 export function unmount() {
-  // nothing
+  // Nothing to clean up
 }

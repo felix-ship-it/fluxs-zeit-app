@@ -111,26 +111,110 @@ def handle_auth():
         return {'success': False, 'error': err}
 
 
-def handle_employees():
-    """Fetch all employees from Personio."""
+def _fetch_employees_with_retry():
+    """Fetch employees, retry once on auth failure."""
     token, err = _get_token()
     if not token:
-        return {'success': False, 'error': err}
+        return None, err
 
     result = _personio_request('GET', '/company/employees', token=token)
 
     if not result.get('success'):
-        # Token might be expired, clear cache and retry once
         try:
             os.remove(TOKEN_CACHE_FILE)
         except Exception:
             pass
         token, err = _get_token()
         if not token:
-            return {'success': False, 'error': err}
+            return None, err
         result = _personio_request('GET', '/company/employees', token=token)
 
-    return result
+    if result.get('success') and result.get('data'):
+        return result['data'], None
+    return None, result.get('error', {}).get('message', 'Unknown')
+
+
+def handle_employees():
+    """Fetch all employees from Personio."""
+    data, err = _fetch_employees_with_retry()
+    if data is None:
+        return {'success': False, 'error': err}
+    return {'success': True, 'data': data}
+
+
+def handle_login(params):
+    """Authenticate employee by email + company PIN."""
+    email = (params.get('email') or '').strip().lower()
+    pin = (params.get('password') or '').strip()
+
+    if not email:
+        return {'success': False, 'error': 'E-Mail ist erforderlich'}
+    if not pin:
+        return {'success': False, 'error': 'Passwort ist erforderlich'}
+
+    # Company PIN — shared secret for all employees
+    # Change this to your desired PIN
+    COMPANY_PIN = 'fluxs2026'
+
+    if pin != COMPANY_PIN:
+        return {'success': False, 'error': 'Falsches Passwort'}
+
+    # Fetch employees and match by email
+    employees, err = _fetch_employees_with_retry()
+    if employees is None:
+        return {
+            'success': False,
+            'error': f'Personio nicht erreichbar: {err}',
+        }
+
+    # Find matching employee
+    matched = None
+    for emp in employees:
+        attrs = emp.get('attributes', {})
+        emp_email = attrs.get('email', {}).get('value', '')
+        if emp_email and emp_email.strip().lower() == email:
+            matched = emp
+            break
+
+    if not matched:
+        return {
+            'success': False,
+            'error': 'Kein Mitarbeiter mit dieser E-Mail gefunden',
+        }
+
+    # Return matched employee data
+    attrs = matched.get('attributes', {})
+    first = attrs.get('first_name', {}).get('value', '')
+    last = attrs.get('last_name', {}).get('value', '')
+    dept = ''
+    dept_val = attrs.get('department', {}).get('value', {})
+    if isinstance(dept_val, dict):
+        dept = dept_val.get('attributes', {}).get(
+            'name', ''
+        )
+    role = attrs.get('position', {}).get('value', '')
+    emp_id = attrs.get('id', {}).get('value', matched.get('id'))
+    sup_val = attrs.get('supervisor', {}).get('value', {})
+    sup_id = None
+    if isinstance(sup_val, dict):
+        sup_id = sup_val.get('attributes', {}).get(
+            'id', {}
+        ).get('value')
+
+    return {
+        'success': True,
+        'employee': {
+            'id': emp_id,
+            'email': email,
+            'firstName': first,
+            'lastName': last,
+            'name': f'{first} {last}'.strip(),
+            'initials': f'{first[:1]}{last[:1]}'.upper(),
+            'role': role,
+            'dept': dept,
+            'supervisorId': sup_id,
+        },
+    }
 
 
 def handle_attendances(params):
@@ -223,6 +307,8 @@ def main():
     try:
         if action == 'auth':
             result = handle_auth()
+        elif action == 'login':
+            result = handle_login(params)
         elif action == 'employees':
             result = handle_employees()
         elif action == 'attendances':

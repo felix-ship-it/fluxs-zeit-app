@@ -1,7 +1,6 @@
 /**
  * FLUXS Zeit App — Auth Module
- * Login, logout, session persistence, role-based access.
- * Integrates with Personio employee data.
+ * Email + password login against Personio employee list.
  * Max 500 lines.
  */
 
@@ -10,176 +9,208 @@
 import * as State from './state.js';
 import * as Storage from './storage.js';
 import * as API from './api.js';
+import * as Env from './env.js';
+import { navigate } from './router.js';
+import { showToast } from './ui.js';
 
-// ─── Constants ───────────────────────────────────────────────────────────────
+// ─── Demo Employee (Staging fallback) ──────────────────────────────────────
 
-const SESSION_KEY = 'fluxs_session';
-const SESSION_TTL = 8 * 60 * 60 * 1000; // 8 hours
+const DEMO_EMPLOYEE = {
+  id: 9999,
+  name: 'Demo Mitarbeiter',
+  firstName: 'Demo',
+  lastName: 'Mitarbeiter',
+  initials: 'DM',
+  role: 'Demo',
+  dept: 'Test',
+  email: 'demo@fluxs.de',
+  vacation: { total: 28, used: 5 },
+  overtimeMs: 0,
+};
 
-// ─── Login ───────────────────────────────────────────────────────────────────
+// ─── Demo Data Generators ──────────────────────────────────────────────────
 
-/**
- * Login: find employee by email in Personio data, then save session.
- * @param {string} email
- * @param {string} pin  - 4-digit PIN (stored hashed in localStorage)
- * @returns {Promise<{success: boolean, error?: string, user?: object}>}
- */
-export async function login(email, pin) {
-  if (!email || !pin) {
-    return { success: false, error: 'E-Mail und PIN erforderlich.' };
+function _generateDemoAttendance(employeeId) {
+  const records = [];
+  const today = new Date();
+  for (let d = 1; d <= 20; d++) {
+    const date = new Date(today.getFullYear(), today.getMonth(), d);
+    if (date > today || date.getDay() === 0 || date.getDay() === 6) continue;
+    const ds = date.toISOString().split('T')[0];
+    records.push({
+      id: `att-${employeeId}-${d}`,
+      employeeId,
+      date: ds,
+      start: '08:00',
+      end: '16:30',
+      breakMin: 30,
+      status: 'approved',
+    });
+  }
+  return records;
+}
+
+function _generateDemoAbsences() {
+  const year = new Date().getFullYear();
+  return [
+    { id: 'abs-1', type: 'urlaub', label: 'Urlaub', start: `${year}-01-15`, end: `${year}-01-19`, status: 'approved', comment: '' },
+    { id: 'abs-2', type: 'urlaub', label: 'Urlaub', start: `${year}-06-10`, end: `${year}-06-14`, status: 'pending', comment: 'Sommerurlaub' },
+    { id: 'abs-3', type: 'krank', label: 'Krankmeldung', start: `${year}-02-05`, end: `${year}-02-07`, status: 'approved', comment: '' },
+  ];
+}
+
+// ─── Login ─────────────────────────────────────────────────────────────────
+
+export async function login(email, password) {
+  email = (email || '').trim().toLowerCase();
+  password = (password || '').trim();
+
+  if (!email || !password) {
+    showToast('E-Mail und Passwort erforderlich', 'error');
+    return { success: false };
   }
 
-  // 1. Get employees from state or fetch fresh
-  let employees = State.get('employees');
-  if (!employees) {
-    try {
-      const result = await API.getEmployees();
-      if (!result.success) throw new Error(result.error || 'Personio nicht erreichbar');
-      employees = result.data.map(e => ({
-        id: e.attributes.id?.value,
-        name: `${e.attributes.first_name?.value} ${e.attributes.last_name?.value}`.trim(),
-        email: e.attributes.email?.value?.toLowerCase(),
-        position: e.attributes.position?.value,
-        department: e.attributes.department?.attributes?.name,
-        role: _inferRole(e),
-      }));
-      State.set('employees', employees);
-      await Storage.saveEmployees(employees);
-    } catch (e) {
-      // Fallback to cached employees
-      employees = await Storage.getEmployees();
-      if (!employees || employees.length === 0) {
-        return { success: false, error: 'Keine Mitarbeiterdaten verfügbar. Bitte Internetverbindung prüfen.' };
-      }
-    }
-  }
-
-  // 2. Find employee by email
-  const emp = employees.find(e => e.email === email.toLowerCase().trim());
-  if (!emp) {
-    return { success: false, error: 'E-Mail nicht gefunden.' };
-  }
-
-  // 3. Verify PIN (or set up PIN if first login)
-  const pinResult = await _verifyOrSetPin(emp.id, pin);
-  if (!pinResult.success) return pinResult;
-
-  // 4. Create session
-  const session = {
-    userId: emp.id,
-    email: emp.email,
-    name: emp.name,
-    role: emp.role || 'employee',
-    loginAt: Date.now(),
-    expiresAt: Date.now() + SESSION_TTL,
-  };
-
-  await Storage.saveSession(session);
-  State.set('session', session);
-  State.set('currentUser', emp);
-  State.emit('auth:login', session);
-
-  return { success: true, user: emp };
-}
-
-// ─── Logout ──────────────────────────────────────────────────────────────────
-
-export async function logout() {
-  await Storage.clearSession();
-  State.set('session', null);
-  State.set('currentUser', null);
-  State.emit('auth:logout');
-}
-
-// ─── Session ────────────────────────────────────────────────────────────────
-
-export async function restoreSession() {
-  const session = await Storage.getSession();
-  if (!session) return null;
-
-  // Check expiry
-  if (session.expiresAt < Date.now()) {
-    await Storage.clearSession();
-    return null;
-  }
-
-  State.set('session', session);
-
-  // Restore current user from employees cache
-  const employees = await Storage.getEmployees();
-  if (employees) {
-    State.set('employees', employees);
-    const user = employees.find(e => e.id === session.userId);
-    if (user) State.set('currentUser', user);
-  }
-
-  return session;
-}
-
-export function getSession() {
-  return State.get('session');
-}
-
-export function getCurrentUser() {
-  return State.get('currentUser');
-}
-
-export function isLoggedIn() {
-  const session = State.get('session');
-  return session && session.expiresAt > Date.now();
-}
-
-export function hasRole(role) {
-  const session = State.get('session');
-  if (!session) return false;
-  const roleHierarchy = ['employee', 'manager', 'admin'];
-  const userLevel = roleHierarchy.indexOf(session.role);
-  const requiredLevel = roleHierarchy.indexOf(role);
-  return userLevel >= requiredLevel;
-}
-
-// ─── PIN Management ─────────────────────────────────────────────────────────
-
-async function _verifyOrSetPin(userId, pin) {
-  const storedHash = await Storage.getPinHash(userId);
-
-  if (!storedHash) {
-    // First login: set the PIN
-    if (pin.length !== 4 || !/^\d{4}$/.test(pin)) {
-      return { success: false, error: 'PIN muss 4-stellig sein.' };
-    }
-    const hash = await _hashPin(pin);
-    await Storage.savePinHash(userId, hash);
+  // Staging demo login shortcut
+  if (Env.isStaging() && email === 'demo@fluxs.de' && password === 'demo') {
+    Env.log('Demo login (staging)');
+    _setEmployee(DEMO_EMPLOYEE, 'demo');
     return { success: true };
   }
 
-  // Verify
-  const hash = await _hashPin(pin);
-  if (hash !== storedHash) {
-    return { success: false, error: 'Falscher PIN.' };
+  // Real Personio login via backend
+  try {
+    const result = await API.login(email, password);
+
+    if (!result.success) {
+      showToast(result.error || 'Login fehlgeschlagen', 'error');
+      return { success: false };
+    }
+
+    const emp = result.employee;
+    emp.vacation = { total: 28, used: 0 };
+    emp.overtimeMs = 0;
+
+    _setEmployee(emp, 'real');
+
+    // Cache email in IndexedDB for "remember me"
+    if (Storage.isAvailable()) {
+      await Storage.set(Storage.STORES.SETTINGS, 'lastEmail', email);
+    }
+
+    return { success: true };
+  } catch (e) {
+    Env.error('Login error:', e.message);
+
+    // Staging fallback: if Personio unreachable, allow demo
+    if (Env.isStaging()) {
+      showToast('Personio nicht erreichbar – Demo-Modus', 'info');
+      _setEmployee(DEMO_EMPLOYEE, 'demo');
+      return { success: true };
+    }
+
+    showToast('Verbindung fehlgeschlagen', 'error');
+    return { success: false };
   }
-  return { success: true };
 }
 
-async function _hashPin(pin) {
-  const encoder = new TextEncoder();
-  const data = encoder.encode(pin + 'fluxs_salt_2024');
-  const hashBuffer = await crypto.subtle.digest('SHA-256', data);
-  const hashArray = Array.from(new Uint8Array(hashBuffer));
-  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+// ─── Set Employee & Load Data ──────────────────────────────────────────────
+
+async function _setEmployee(emp, mode) {
+  State.batch({
+    currentEmployee: emp,
+    apiMode: mode,
+  });
+
+  // Load data based on mode
+  if (mode === 'real') {
+    _loadRealData(emp.id);
+  } else if (Env.isStaging()) {
+    State.set('attendanceRecords', _generateDemoAttendance(emp.id));
+    State.set('absenceRequests', _generateDemoAbsences());
+  }
+
+  navigate('dashboard');
 }
 
-// ─── Role Inference ──────────────────────────────────────────────────────────
+async function _loadRealData(employeeId) {
+  try {
+    const today = new Date().toISOString().split('T')[0];
+    const monthStart = `${today.slice(0, 7)}-01`;
+    const yearStart = `${new Date().getFullYear()}-01-01`;
+    const yearEnd = `${new Date().getFullYear()}-12-31`;
 
-function _inferRole(employee) {
-  const pos = (employee.attributes?.position?.value || '').toLowerCase();
-  const dept = (employee.attributes?.department?.attributes?.name || '').toLowerCase();
+    const [attResult, absResult] = await Promise.all([
+      API.getAttendances(monthStart, today, employeeId),
+      API.getAbsences(employeeId, yearStart, yearEnd),
+    ]);
 
-  if (pos.includes('geschäftsführ') || pos.includes('ceo') || pos.includes('cto') || pos.includes('coo')) {
-    return 'admin';
+    if (attResult.success) {
+      const records = (attResult.data || []).map(a => ({
+        id: a.id || `att-${Date.now()}`,
+        employeeId: a.attributes?.employee?.value || employeeId,
+        date: a.attributes?.date?.value || '',
+        start: a.attributes?.start_time?.value || '',
+        end: a.attributes?.end_time?.value || '',
+        breakMin: a.attributes?.break?.value || 0,
+        status: a.attributes?.status?.value || 'approved',
+      }));
+      State.set('attendanceRecords', records);
+    }
+
+    if (absResult.success) {
+      const absences = (absResult.data || []).map(a => ({
+        id: a.id || `abs-${Date.now()}`,
+        type: (a.attributes?.time_off_type?.value?.attributes?.name?.value || '').toLowerCase(),
+        label: a.attributes?.time_off_type?.value?.attributes?.name?.value || '',
+        start: a.attributes?.start_date?.value || '',
+        end: a.attributes?.end_date?.value || '',
+        status: a.attributes?.status?.value || 'pending',
+        comment: a.attributes?.comment?.value || '',
+      }));
+      State.set('absenceRequests', absences);
+    }
+  } catch (e) {
+    Env.warn('Failed to load real data:', e.message);
   }
-  if (pos.includes('lead') || pos.includes('leiter') || pos.includes('head') || dept.includes('management')) {
-    return 'manager';
+}
+
+// ─── Logout ────────────────────────────────────────────────────────────────
+
+export function logout() {
+  State.batch({
+    currentEmployee: null,
+    clockedIn: false,
+    clockInTime: null,
+    status: 'frei',
+    pauseStartTime: null,
+    rauchStartTime: null,
+    totalWorkMs: 0,
+    totalPauseMs: 0,
+    totalRauchMs: 0,
+    todayEntries: [],
+    attendanceRecords: [],
+    absenceRequests: [],
+    apiMode: 'demo',
+  });
+  navigate('login');
+}
+
+// ─── Admin Check ───────────────────────────────────────────────────────────
+
+export function isAdmin() {
+  const emp = State.get('currentEmployee');
+  if (!emp) return false;
+  const role = (emp.role || '').toLowerCase();
+  return role.includes('leiter') || role.includes('admin') || role.includes('geschäftsführer');
+}
+
+// ─── Get Last Email (for pre-fill) ────────────────────────────────────────
+
+export async function getLastEmail() {
+  if (!Storage.isAvailable()) return null;
+  try {
+    return await Storage.get(Storage.STORES.SETTINGS, 'lastEmail');
+  } catch {
+    return null;
   }
-  return 'employee';
 }
