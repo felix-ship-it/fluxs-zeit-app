@@ -32,6 +32,10 @@ export async function auth() {
   return _call('auth');
 }
 
+export async function login(email, password) {
+  return _call('login', { email, password });
+}
+
 // ─── Employees ──────────────────────────────────────────────────────────────
 
 export async function getEmployees() {
@@ -131,13 +135,70 @@ export async function syncOfflineQueue() {
   return { synced, failed, remaining: queue.length - synced };
 }
 
-// ─── Auto-Connect ────────────────────────────────────────────────────────────
+// ─── Auto-Connect ───────────────────────────────────────────────────────────
 
-export async function checkConnection() {
+export async function autoConnect() {
   try {
-    const result = await _call('auth');
-    return result.success === true;
-  } catch {
-    return false;
+    console.log('[API] Auto-connecting to Personio...');
+    const authResult = await auth();
+    if (!authResult.success) {
+      console.warn('[API] Auth failed');
+      return { success: false, error: 'Auth failed' };
+    }
+
+    const empResult = await getEmployees();
+    if (!empResult.success || !empResult.data) {
+      return { success: false, error: 'No employees' };
+    }
+
+    // Map Personio employee data
+    const mapped = empResult.data
+      .map(emp => {
+        const attrs = emp.attributes || {};
+        const firstName = attrs.first_name?.value || '';
+        const lastName = attrs.last_name?.value || '';
+        const email = attrs.email?.value || '';
+        const dept = attrs.department?.value?.attributes?.name || '';
+        const role = attrs.position?.value || '';
+        const supervisorId = attrs.supervisor?.value?.attributes?.id?.value || null;
+
+        return {
+          id: emp.attributes?.id?.value || emp.id,
+          name: `${firstName} ${lastName}`.trim(),
+          firstName,
+          lastName,
+          initials: `${firstName[0] || ''}${lastName[0] || ''}`.toUpperCase(),
+          role,
+          dept,
+          email,
+          supervisorId,
+          vacation: { total: 28, used: 0 },
+          overtimeMs: 0,
+        };
+      })
+      .sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'));
+
+    // Build team leaders map
+    const leaders = {};
+    mapped.forEach(emp => {
+      leaders[emp.id] = emp.supervisorId;
+    });
+
+    State.batch({
+      realEmployees: mapped,
+      teamLeaders: leaders,
+      apiMode: 'real',
+    });
+
+    // Cache employees in IndexedDB
+    if (Storage.isAvailable()) {
+      await Storage.set(Storage.STORES.CACHE, 'employees', mapped);
+    }
+
+    return { success: true, count: mapped.length };
+
+  } catch (e) {
+    console.warn('[API] Auto-connect failed:', e.message);
+    return { success: false, error: e.message };
   }
 }
