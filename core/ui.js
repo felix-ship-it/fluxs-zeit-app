@@ -6,8 +6,6 @@
 
 'use strict';
 
-// ─── DOM Helper ─────────────────────────────────────────────────────────────
-
 export function $(id) {
   return document.getElementById(id);
 }
@@ -25,12 +23,9 @@ export function html(tag, attrs = {}, children = '') {
   return el;
 }
 
-// ─── Toast Notifications ────────────────────────────────────────────────────
-
 let _toastTimeout = null;
 
 export function showToast(message, type = 'info', duration = 3000) {
-  // Remove existing
   const existing = $('toast');
   if (existing) existing.remove();
 
@@ -43,8 +38,6 @@ export function showToast(message, type = 'info', duration = 3000) {
   `);
 
   document.body.appendChild(toast);
-
-  // Trigger animation
   requestAnimationFrame(() => toast.classList.add('visible'));
 
   clearTimeout(_toastTimeout);
@@ -54,14 +47,11 @@ export function showToast(message, type = 'info', duration = 3000) {
   }, duration);
 }
 
-// ─── Modal ──────────────────────────────────────────────────────────────────
-
 export function openModal(id) {
   const modal = $(id);
   if (modal) {
     modal.classList.add('open');
     modal.setAttribute('aria-hidden', 'false');
-    // Focus first input
     const input = modal.querySelector('input, select, textarea, button');
     if (input) setTimeout(() => input.focus(), 100);
   }
@@ -75,7 +65,6 @@ export function closeModal(id) {
   }
 }
 
-// Close modal on backdrop click
 document.addEventListener('click', (e) => {
   if (e.target.classList.contains('modal-overlay')) {
     e.target.classList.remove('open');
@@ -83,7 +72,6 @@ document.addEventListener('click', (e) => {
   }
 });
 
-// Close modal on Escape
 document.addEventListener('keydown', (e) => {
   if (e.key === 'Escape') {
     const open = document.querySelector('.modal-overlay.open');
@@ -93,8 +81,6 @@ document.addEventListener('keydown', (e) => {
     }
   }
 });
-
-// ─── Format Helpers ─────────────────────────────────────────────────────────
 
 export function formatTime(ms) {
   if (!ms || ms < 0) return '0:00';
@@ -125,8 +111,6 @@ export function nowTime() {
   return `${String(d.getHours()).padStart(2, '0')}:${String(d.getMinutes()).padStart(2, '0')}`;
 }
 
-// ─── Clock Display ──────────────────────────────────────────────────────────
-
 export function updateClock() {
   const el = $('live-clock');
   if (!el) return;
@@ -134,13 +118,9 @@ export function updateClock() {
   el.textContent = now.toLocaleTimeString('de-DE', { hour: '2-digit', minute: '2-digit', second: '2-digit' });
 }
 
-// ─── Loading Skeleton ───────────────────────────────────────────────────────
-
 export function skeleton(lines = 3) {
   return `<div class="skeleton-block">${'<div class="skeleton-line"></div>'.repeat(lines)}</div>`;
 }
-
-// ─── Confirm Dialog ─────────────────────────────────────────────────────────
 
 export function confirm(message) {
   return window.confirm(message);

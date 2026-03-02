@@ -10,11 +10,7 @@
 import * as State from './state.js';
 import * as Storage from './storage.js';
 
-// ─── Proxy Endpoint ─────────────────────────────────────────────────────────
-
 const PROXY = './cgi-bin/personio.py';
-
-// ─── Low-Level Call ─────────────────────────────────────────────────────────
 
 async function _call(action, params = {}) {
   const resp = await fetch(PROXY, {
@@ -26,8 +22,6 @@ async function _call(action, params = {}) {
   return resp.json();
 }
 
-// ─── Auth ───────────────────────────────────────────────────────────────────
-
 export async function auth() {
   return _call('auth');
 }
@@ -36,13 +30,13 @@ export async function login(email, password) {
   return _call('login', { email, password });
 }
 
-// ─── Employees ──────────────────────────────────────────────────────────────
+export async function ssoLogin(email) {
+  return _call('sso_login', { email });
+}
 
 export async function getEmployees() {
   return _call('employees');
 }
-
-// ─── Attendances ────────────────────────────────────────────────────────────
 
 export async function getAttendances(startDate, endDate, employeeId) {
   return _call('attendances', {
@@ -62,7 +56,6 @@ export async function createAttendance(empId, date, startTime, endTime, breakMin
     comment,
   };
 
-  // Try online first
   if (navigator.onLine) {
     try {
       return await _call('create_attendance', payload);
@@ -71,7 +64,6 @@ export async function createAttendance(empId, date, startTime, endTime, breakMin
     }
   }
 
-  // Queue for offline sync
   await Storage.addToOfflineQueue({
     type: 'create_attendance',
     payload,
@@ -79,8 +71,6 @@ export async function createAttendance(empId, date, startTime, endTime, breakMin
 
   return { success: true, queued: true };
 }
-
-// ─── Absences ───────────────────────────────────────────────────────────────
 
 export async function getAbsences(employeeId, startDate, endDate) {
   return _call('absences', {
@@ -112,8 +102,6 @@ export async function createAbsence(empId, type, startDate, endDate, halfDay = f
   return { success: true, queued: true };
 }
 
-// ─── Offline Queue Sync ─────────────────────────────────────────────────────
-
 export async function syncOfflineQueue() {
   const queue = await Storage.getOfflineQueue();
   if (queue.length === 0) return { synced: 0 };
@@ -135,8 +123,6 @@ export async function syncOfflineQueue() {
   return { synced, failed, remaining: queue.length - synced };
 }
 
-// ─── Auto-Connect ───────────────────────────────────────────────────────────
-
 export async function autoConnect() {
   try {
     console.log('[API] Auto-connecting to Personio...');
@@ -151,7 +137,6 @@ export async function autoConnect() {
       return { success: false, error: 'No employees' };
     }
 
-    // Map Personio employee data
     const mapped = empResult.data
       .map(emp => {
         const attrs = emp.attributes || {};
@@ -178,7 +163,6 @@ export async function autoConnect() {
       })
       .sort((a, b) => a.lastName.localeCompare(b.lastName, 'de'));
 
-    // Build team leaders map
     const leaders = {};
     mapped.forEach(emp => {
       leaders[emp.id] = emp.supervisorId;
@@ -190,7 +174,6 @@ export async function autoConnect() {
       apiMode: 'real',
     });
 
-    // Cache employees in IndexedDB
     if (Storage.isAvailable()) {
       await Storage.set(Storage.STORES.CACHE, 'employees', mapped);
     }

@@ -75,7 +75,6 @@ async function _connectPersonio() {
   } else {
     Env.warn('Personio connection failed:', result.error);
     if (Env.isLive()) {
-      // Live: this is critical — login will show error
       Env.error('Live mode requires Personio');
     }
   }
@@ -124,7 +123,6 @@ function _initPWA() {
     _showPWABanner();
   });
 
-  // iOS detection
   const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
   const isStandalone = window.matchMedia('(display-mode: standalone)').matches;
   if (isIOS && !isStandalone) {
@@ -133,7 +131,6 @@ function _initPWA() {
 }
 
 function _showPWABanner(isIOS = false) {
-  // Don't show if already installed
   if (window.matchMedia('(display-mode: standalone)').matches) return;
 
   const banner = document.createElement('div');

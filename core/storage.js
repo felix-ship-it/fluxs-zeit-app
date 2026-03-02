@@ -9,17 +9,14 @@
 const DB_NAME = 'fluxs-zeit-app';
 const DB_VERSION = 2;
 
-// Store names
 export const STORES = {
-  CREDENTIALS: 'credentials',   // Personio API key
-  OFFLINE_QUEUE: 'offlineQueue', // Pending clock in/out actions
-  CACHE: 'cache',               // Employee data, absences
-  SETTINGS: 'settings',         // User preferences
+  CREDENTIALS: 'credentials',
+  OFFLINE_QUEUE: 'offlineQueue',
+  CACHE: 'cache',
+  SETTINGS: 'settings',
 };
 
 let _db = null;
-
-// ─── Open Database ──────────────────────────────────────────────────────────
 
 function _open() {
   if (_db) return Promise.resolve(_db);
@@ -47,8 +44,6 @@ function _open() {
     };
   });
 }
-
-// ─── Generic CRUD ───────────────────────────────────────────────────────────
 
 export async function get(store, key) {
   const db = await _open();
@@ -110,8 +105,6 @@ export async function clear(store) {
   });
 }
 
-// ─── Convenience: Credentials ───────────────────────────────────────────────
-
 export async function getApiKey() {
   return get(STORES.CREDENTIALS, 'personio-api-key');
 }
@@ -123,8 +116,6 @@ export async function setApiKey(clientId, clientSecret) {
 export async function removeApiKey() {
   return remove(STORES.CREDENTIALS, 'personio-api-key');
 }
-
-// ─── Convenience: Offline Queue ─────────────────────────────────────────────
 
 export async function addToOfflineQueue(action) {
   const id = `q-${Date.now()}-${Math.random().toString(36).slice(2, 6)}`;
@@ -149,8 +140,6 @@ export async function removeFromOfflineQueue(id) {
 export async function clearOfflineQueue() {
   return clear(STORES.OFFLINE_QUEUE);
 }
-
-// ─── Feature Detection ──────────────────────────────────────────────────────
 
 export function isAvailable() {
   return typeof indexedDB !== 'undefined';

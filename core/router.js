@@ -1,79 +1,95 @@
 /**
  * FLUXS Zeit App — SPA Router with Lazy Loading
- * Hash-based routing for Apache/CGI hosting compatibility.
- * Max 200 lines.
+ * Each screen is loaded on-demand as an ES module.
+ * Max 500 lines.
  */
 
 'use strict';
 
-import * as Auth from './auth.js';
+import * as State from './state.js';
 
-// ─── Route Registry ──────────────────────────────────────────────────────────
+// ─── Route Registry ─────────────────────────────────────────────────────────
 
-const ROUTES = {
-  '/login':      { module: '../views/login.js',      public: true  },
-  '/dashboard':  { module: '../views/dashboard.js',  public: false },
-  '/attendance': { module: '../views/attendance.js', public: false },
-  '/absences':   { module: '../views/absences.js',   public: false },
-  '/team':       { module: '../views/team.js',       public: false, role: 'manager' },
-  '/settings':   { module: '../views/settings.js',   public: false, role: 'admin'   },
+const routes = {
+  login:     () => import('../screens/login/login.js'),
+  dashboard: () => import('../screens/dashboard/dashboard.js'),
+  absences:  () => import('../screens/absences/absences.js'),
+  monthly:   () => import('../screens/monthly/monthly.js'),
+  profile:   () => import('../screens/profile/profile.js'),
+  projects:  () => import('../screens/projects/projects.js'),
 };
 
-// ─── State ────────────────────────────────────────────────────────────────────
+// Cache loaded modules
+const _moduleCache = {};
 
-let _currentRoute = null;
-let _container = null;
+// ─── Navigate ───────────────────────────────────────────────────────────────
 
-// ─── Init ────────────────────────────────────────────────────────────────────
-
-export function init(containerId = 'app') {
-  _container = document.getElementById(containerId);
-  window.addEventListener('hashchange', _onHashChange);
-}
-
-// ─── Navigate ──────────────────────────────────────────────────────────────
-
-export function navigate(path) {
-  window.location.hash = path;
-  _loadRoute(path);
-}
-
-// ─── Internal ─────────────────────────────────────────────────────────────
-
-function _onHashChange() {
-  const path = window.location.hash.replace('#', '') || '/dashboard';
-  _loadRoute(path);
-}
-
-async function _loadRoute(path) {
-  const route = ROUTES[path];
-
-  if (!route) {
-    navigate('/dashboard');
+export async function navigate(screen) {
+  if (!routes[screen]) {
+    console.warn(`[Router] Unknown screen: ${screen}`);
     return;
   }
 
-  // Auth guard
-  if (!route.public && !Auth.isLoggedIn()) {
-    navigate('/login');
-    return;
+  const prev = State.get('activeScreen');
+  if (prev === screen) return;
+
+  State.set('previousScreen', prev);
+  State.set('activeScreen', screen);
+
+  const container = document.getElementById('screen-container');
+  if (!container) return;
+
+  // Unmount previous screen
+  if (_moduleCache[prev] && typeof _moduleCache[prev].unmount === 'function') {
+    _moduleCache[prev].unmount();
   }
 
-  // Role guard
-  if (route.role && !Auth.hasRole(route.role)) {
-    navigate('/dashboard');
-    return;
-  }
-
-  // Load and render view module
-  try {
-    const mod = await import(route.module);
-    if (mod.render && _container) {
-      _currentRoute = path;
-      _container.innerHTML = '';
-      await mod.render(_container);
+  // Load & cache module
+  if (!_moduleCache[screen]) {
+    try {
+      _moduleCache[screen] = await routes[screen]();
+    } catch (e) {
+      console.error(`[Router] Failed to load screen: ${screen}`, e);
+      container.innerHTML = `<div class="screen-error">Fehler beim Laden</div>`;
+      return;
     }
-  } catch (e) {
-    console.error('[Router] Failed to load route:', path, e);
   }
+
+  // Mount new screen
+  container.innerHTML = '';
+  if (typeof _moduleCache[screen].mount === 'function') {
+    await _moduleCache[screen].mount(container);
+  }
+
+  // Update nav
+  _updateNav(screen);
+
+  // Scroll to top
+  container.scrollTop = 0;
+}
+
+// ─── Nav Highlighting ───────────────────────────────────────────────────────
+
+function _updateNav(screen) {
+  document.querySelectorAll('.nav-item').forEach(item => {
+    const target = item.dataset.screen;
+    item.classList.toggle('active', target === screen);
+  });
+}
+
+// ─── Init ───────────────────────────────────────────────────────────────────
+
+export function init() {
+  document.addEventListener('click', (e) => {
+    const navItem = e.target.closest('[data-screen]');
+    if (navItem) {
+      e.preventDefault();
+      const screen = navItem.dataset.screen;
+      if (screen !== 'login') navigate(screen);
+    }
+  });
+}
+
+export function getActiveScreen() {
+  return State.get('activeScreen');
 }

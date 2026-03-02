@@ -9,53 +9,35 @@
 // ─── Default State ──────────────────────────────────────────────────────────
 
 const _defaults = {
-  // Current user
   currentEmployee: null,
-
-  // Session tracking
   clockedIn: false,
   clockInTime: null,
-  status: 'frei',           // 'frei' | 'arbeitet' | 'pause' | 'raucherpause'
+  status: 'frei',
   pauseStartTime: null,
   rauchStartTime: null,
-
-  // Today's accumulated times (ms)
   totalWorkMs: 0,
   totalPauseMs: 0,
   totalRauchMs: 0,
-
-  // Timeline entries for today
   todayEntries: [],
-
-  // Settings
   settings: {
     weekHours: 40,
     dayHours: 8,
     yearVacation: 28,
   },
-
-  // API
-  apiMode: 'demo',          // 'demo' | 'real'
+  apiMode: 'demo',
   personioToken: null,
   realEmployees: null,
   teamLeaders: {},
-
-  // Current view month
   viewMonth: new Date().getMonth(),
   viewYear: new Date().getFullYear(),
-
-  // Attendance & absences
   attendanceRecords: [],
   absenceRequests: [],
-
-  // Projects
   projects: [],
   projectBookings: [],
-
-  // Correction requests
+  activeProject: null,
+  projectStartTime: null,
+  projectAccMs: 0,
   correctionRequests: [],
-
-  // Navigation
   activeScreen: null,
   previousScreen: null,
 };
@@ -65,7 +47,6 @@ const _defaults = {
 const _state = {};
 const _listeners = new Map();
 
-// Initialize with defaults
 Object.keys(_defaults).forEach(key => {
   _state[key] = typeof _defaults[key] === 'object' && _defaults[key] !== null
     ? JSON.parse(JSON.stringify(_defaults[key]))
@@ -92,7 +73,6 @@ export function update(key, updater) {
 export function subscribe(key, fn) {
   if (!_listeners.has(key)) _listeners.set(key, []);
   _listeners.get(key).push(fn);
-  // Return unsubscribe function
   return () => {
     const arr = _listeners.get(key);
     if (arr) {
@@ -120,7 +100,6 @@ export function batch(updates) {
   Object.entries(updates).forEach(([key, value]) => {
     _state[key] = value;
   });
-  // Fire listeners after all updates
   Object.entries(updates).forEach(([key, value]) => {
     const fns = _listeners.get(key);
     if (fns) fns.forEach(fn => fn(value));
