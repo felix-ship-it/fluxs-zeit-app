@@ -84,6 +84,7 @@ function _template() {
             <span class="login-spinner login-spinner-dark"></span>
           </span>
         </button>
+        ${!Auth.isSSOConfigured() ? '<p class="login-sso-hint">\u26a0 Azure App Registration noch nicht eingerichtet</p>' : ''}
         <div class="login-error" id="loginError" style="display:none"></div>
       </div>
 
