@@ -12,7 +12,7 @@ import urllib.request
 import urllib.error
 import time
 
-# ── Hardcoded Credentials (server-side only) ─────────────────────────────────
+# ── Hardcoded Credentials (server-side only) ───────────────────────────────────────────
 PERSONIO_CLIENT_ID = 'papi-d33f35d4-9ca1-4649-b786-fa93fb9246bf'
 PERSONIO_CLIENT_SECRET = 'papi-MmIzY2Y1Y2QtN2E4OC00OTM0LThiNzItYzBiMDE5ZDExOGI1'
 PERSONIO_BASE_URL = 'https://api.personio.de/v1'
@@ -217,6 +217,69 @@ def handle_login(params):
     }
 
 
+def handle_sso_login(params):
+    """Authenticate employee by email only (SSO mode — MS already authenticated)."""
+    email = (params.get('email') or '').strip().lower()
+
+    if not email:
+        return {'success': False, 'error': 'E-Mail ist erforderlich'}
+
+    # Fetch employees and match by email
+    employees, err = _fetch_employees_with_retry()
+    if employees is None:
+        return {
+            'success': False,
+            'error': f'Personio nicht erreichbar: {err}',
+        }
+
+    # Find matching employee
+    matched = None
+    for emp in employees:
+        attrs = emp.get('attributes', {})
+        emp_email = attrs.get('email', {}).get('value', '')
+        if emp_email and emp_email.strip().lower() == email:
+            matched = emp
+            break
+
+    if not matched:
+        return {
+            'success': False,
+            'error': 'Kein Mitarbeiter mit dieser E-Mail gefunden',
+        }
+
+    # Return matched employee data
+    attrs = matched.get('attributes', {})
+    first = attrs.get('first_name', {}).get('value', '')
+    last = attrs.get('last_name', {}).get('value', '')
+    dept = ''
+    dept_val = attrs.get('department', {}).get('value', {})
+    if isinstance(dept_val, dict):
+        dept = dept_val.get('attributes', {}).get('name', '')
+    role = attrs.get('position', {}).get('value', '')
+    emp_id = attrs.get('id', {}).get('value', matched.get('id'))
+    sup_val = attrs.get('supervisor', {}).get('value', {})
+    sup_id = None
+    if isinstance(sup_val, dict):
+        sup_id = sup_val.get('attributes', {}).get(
+            'id', {}
+        ).get('value')
+
+    return {
+        'success': True,
+        'employee': {
+            'id': emp_id,
+            'email': email,
+            'firstName': first,
+            'lastName': last,
+            'name': f'{first} {last}'.strip(),
+            'initials': f'{first[:1]}{last[:1]}'.upper(),
+            'role': role,
+            'dept': dept,
+            'supervisorId': sup_id,
+        },
+    }
+
+
 def handle_attendances(params):
     """Fetch attendance records for a date range."""
     token, err = _get_token()
@@ -309,6 +372,8 @@ def main():
             result = handle_auth()
         elif action == 'login':
             result = handle_login(params)
+        elif action == 'sso_login':
+            result = handle_sso_login(params)
         elif action == 'employees':
             result = handle_employees()
         elif action == 'attendances':
